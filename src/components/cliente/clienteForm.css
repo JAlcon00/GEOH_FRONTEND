@@ -1,0 +1,200 @@
+/* Contenedor principal del formulario */
+.cliente-form {
+    width: 100%; /* Ocupar el ancho completo del contenedor padre */
+    max-width: 1350px; /* Limitar el ancho máximo */
+    margin: 0 auto; /* Centrar horizontalmente */
+    max-height: 80vh;
+    overflow-y: auto;
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+}
+
+.cliente-form__question{
+    border-radius: 0.5rem; 
+    background-color: #f8f9fa;
+    font-size: 20px;
+    font-weight: bold;
+    margin: auto;
+    padding: 20px;
+    
+    
+}
+
+.cliente-form__rfc-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    width: 100%;
+}
+
+
+.cliente-form__rfc{
+    width: 50%;
+    margin: auto;
+    text-align: center;
+
+}
+.cliente-form__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 30px;
+}
+
+
+/* Estilo individual de cada sección/columna */
+.cliente-form__columna {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Estilos de los botones */
+.btn-primary {
+    display: inline-block;
+    color: #ffffff;
+    padding: 0.5rem 1rem;
+    border-radius: 0.25rem; /* Botones redondeados */
+    transition: all 0.3s ease;
+    font-size: 1rem;
+    text-align: center;
+    border: none;
+}
+
+.btn-primary:hover {
+    background-color: #0056b3; /* Azul oscuro al pasar el mouse */
+    transform: scale(1.05); /* Ligero efecto de agrandamiento */
+}
+
+.btn-secondary {
+    background-color: #6c757d; /* Gris */
+    color: #ffffff;
+    padding: 0.5rem 1rem;
+    border-radius: 0.25rem;
+    transition: all 0.3s ease;
+    font-size: 1rem;
+    border: none;
+}
+
+.btn-secondary:hover {
+    background-color: #565e64; /* Gris más oscuro */
+    transform: scale(1.05); /* Ligero efecto de agrandamiento */
+}
+
+/* Estilos de los inputs */
+.input-primary {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.input-primary-rfc{
+    
+    width: 50%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    text-transform: uppercase;
+}
+
+.input-primary:focus {
+    border-color: #007bff; /* Azul cuando se enfoca */
+    outline: none; /* Elimina el contorno del navegador */
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25); /* Sombra azul */
+}
+
+/* Estilos para áreas de subida de documentos */
+.documento-input {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    width: 100%;
+}
+
+
+.documento-input label {
+    display: block;
+    margin-bottom: 0.5rem; /* Espacio entre etiqueta e input */
+    font-weight: bold;
+}
+
+.documento-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* 2 columnas */
+    gap: 20px;
+}
+
+
+.dropzone {
+    width: 100%;
+    min-height: 120px;
+    padding: 10px;
+    border: 2px dashed #ccc;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Diseño del modal */
+.modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+}
+
+.modal-content {
+    max-width: 800px;
+    padding: 20px;
+}
+
+
+/* Estilo del botón de cierre del modal */
+.modal-content button.close-btn {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: #f8f9fa; /* Fondo gris claro */
+    border: none;
+    color: #6c757d; /* Gris */
+    font-size: 1.5rem;
+    border-radius: 50%;
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.close-btn:hover {
+    background: #e0e0e0;
+    color: #000000;
+}
+
+.modal-content button.close-btn:hover {
+    background: #e0e0e0; /* Fondo gris más oscuro */
+    color: #000000; /* Negro */
+}
+
+/* Responsividad */
+@media (max-width: 768px) {
+    .cliente-form__grid {
+        grid-template-columns: 1fr; /* Solo una columna en móviles */
+        gap: 15px;
+    }
+
+    .modal-content {
+        width: calc(100% - 2rem); /* Reduce el ancho en móviles */
+        padding: 1rem; /* Reduce el padding */
+    }
+}

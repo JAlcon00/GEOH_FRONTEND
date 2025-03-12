@@ -1,0 +1,175 @@
+/* App.css */
+/* Importar Tailwind */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Variables globales */
+:root {
+  --sidebar-width: 200px;
+  --sidebar-collapsed-width: 80px;
+  --header-height: 64px;
+  --transition-duration: 0.3s;
+}
+
+/* Estilos base */
+body {
+  margin: 0;
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Sidebar */
+.sidebar {
+  width: var(--sidebar-width);
+  transition: width var(--transition-duration) ease-in-out;
+}
+
+.sidebar-collapsed {
+  width: var(--sidebar-collapsed-width);
+}
+
+/* Layout */
+.layout {
+  display: flex;
+  min-height: 100vh;
+  background-color: #f9f9f9;
+}
+
+.layout-content {
+  flex: 1;
+  margin-left: var(--sidebar-width);
+  margin-top: var(--header-height);
+  transition: margin var(--transition-duration) ease-in-out;
+}
+
+.layout-content-collapsed {
+  margin-left: var(--sidebar-collapsed-width);
+}
+
+/* Header */
+.header {
+  height: var(--header-height);
+  width: 100%;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 10;
+  background-color: #a12323; /* Ajuste de color */
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all var(--transition-duration) ease-in-out;
+}
+
+.header-expanded {
+  height: auto9; /* Permitir crecimiento vertical */
+  padding-bottom: 1rem; /* Margen inferior adicional */
+}
+
+/* Botones */
+.button {
+  font-size: 14px;
+  padding: 8px 16px;
+  background-color: #c53030;
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.button:hover {
+  background-color: #9b2c2c;
+}
+
+/* Footer */
+.footer {
+  background-color: #2d3748;
+  color: white;
+  text-align: center;
+  padding: 1rem;
+  position: relative;
+}
+
+/* Media queries para responsividad */
+
+/* Pantallas pequeñas (≤ 768px) */
+@media (max-width: 768px) {
+  :root {
+    --sidebar-width: 0;
+    --sidebar-collapsed-width: 80px;
+    --header-height: 56px;
+  }
+
+  .sidebar {
+    left: -200px;
+    transition: left var(--transition-duration) ease-in-out;
+  }
+
+  .layout-content {
+    margin-left: 0;
+    margin-top: var(--header-height);
+  }
+
+  .header {
+    padding: 0.5rem 1rem;
+  }
+
+  .header h1 {
+    font-size: 16px;
+  }
+
+  .header img {
+    height: 40px;
+  }
+
+  .button {
+    font-size: 12px;
+    padding: 6px 12px;
+  }
+}
+
+/* Pantallas extra pequeñas (≤ 480px) */
+@media (max-width: 480px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0.5rem;
+    height: auto;
+  }
+
+  .header h1 {
+    font-size: 14px;
+    margin-bottom: 0.5rem;
+  }
+
+  .header img {
+    height: 32px;
+    margin-top: 0.5rem;
+  }
+
+  .button {
+    font-size: 12px;
+    padding: 5px 10px;
+  }
+
+  .flex {
+    flex-direction: column;
+  }
+
+  .space-y-2 {
+    margin-bottom: 8px;
+  }
+}
+
+/* Transiciones */
+.sidebar,
+.layout-content,
+.header {
+  transition: all var(--transition-duration) ease-in-out;
+}
