@@ -1,4 +1,5 @@
 import api from './api';
+import { IInmueble } from '../types/inmueble.types';
 
 const getGCSImageUrl = (filename: string): string => {
   // Si el filename ya es una URL completa, se devuelve tal cual
@@ -41,7 +42,7 @@ export const createInmueble = async (inmueble: any) => {
   return response.data;
 };
 
-export const updateInmueble = async (id: number, inmueble: any) => {
+export const updateInmueble = async (id: number, inmueble: IInmueble): Promise<IInmueble> => {
   const response = await api.put(`/inmuebles/${id}`, inmueble);
   return response.data;
 };

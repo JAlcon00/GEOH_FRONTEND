@@ -4,4 +4,5 @@ export interface IInmueble {
     valorMercado: number;
     foto?: File | null;
     clienteId?: number;
+    estatus?: string;
 }

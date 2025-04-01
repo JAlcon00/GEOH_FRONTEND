@@ -8,6 +8,7 @@ interface Inmueble {
   direccion: string;
   valorMercado: number;
   foto?: string;
+  estatus: string;
 }
 
 interface InmuebleByClienteProps {

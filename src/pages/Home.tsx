@@ -36,10 +36,23 @@ const containerStyle = {
 
 const center = { lat: 21.1445, lng: -101.6867 };
 
+const haversineDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371000; // Radio de la Tierra en metros
+    const toRad = (x: number) => x * Math.PI / 180;
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+              Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+};
+
 const Home: React.FC = () => {
     const [mapCenter, setMapCenter] = useState(center);
     const [selectedProperty, setSelectedProperty] = useState<Inmueble | null>(null);
     const [markers, setMarkers] = useState<Inmueble[]>([]);
+    const [nearbyMarkers, setNearbyMarkers] = useState<Inmueble[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [suggestions, setSuggestions] = useState<any[]>([]);
     const [searchType, setSearchType] = useState<'nombre' | 'direccion' | 'rfc'>('direccion');
@@ -205,6 +218,23 @@ const Home: React.FC = () => {
         alert('Mostrando expediente del inmueble');
     };
 
+     // Nueva función para manejar el clic en un marcador:
+     const handleMarkerClick = (marker: Inmueble) => {
+        setSelectedProperty(marker);
+        const radius = 1000; // radio en metros
+        // Filtramos los marcadores que se encuentren en un radio menor a 1000 m del seleccionado
+        const nearby = markers.filter(m => 
+            m.id !== marker.id &&
+            haversineDistance(
+                Number(m.lat),
+                Number(m.lon),
+                Number(marker.lat),
+                Number(marker.lon)
+            ) < radius
+        );
+        setNearbyMarkers(nearby);
+    };
+
     return (
         <div className="container mx-auto p-4">
             {/* Barra de Búsqueda con Selector */}
@@ -252,25 +282,41 @@ const Home: React.FC = () => {
             <div className="flex flex-col lg:flex-row gap-4">
             {/* Mapa: ocupa el 100% en móvil y 66% en pantallas grandes */}
             <div className={selectedProperty ? "w-full lg:w-2/3" : "w-full"}>
-                <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
-                    <GoogleMap
-                        mapContainerStyle={containerStyle}
-                        center={mapCenter}
-                        zoom={15}
-                    >
-                        {markers.map((marker, index) => (
-                            <Marker
-                                key={index}
-                                position={{
-                                    lat: Number(marker.lat),
-                                    lng: Number(marker.lon)
-                                }}
-                                onClick={() => setSelectedProperty(marker)}
-                            />
-                        ))}
-                    </GoogleMap>
-                </LoadScript>
-            </div>
+                    <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
+                        <GoogleMap
+                            mapContainerStyle={containerStyle}
+                            center={mapCenter}
+                            zoom={15}
+                        >
+                            {markers.map((marker, index) => (
+                                <Marker
+                                    key={index}
+                                    position={{
+                                        lat: Number(marker.lat),
+                                        lng: Number(marker.lon)
+                                    }}
+                                    // Llamamos a handleMarkerClick para actualizar el inmueble seleccionado y los cercanos
+                                    onClick={() => handleMarkerClick(marker)}
+                                    // Usamos la propiedad label para mostrar el precio
+                                    label={{
+                                        text: marker.nombre ? `$${marker.nombre}` : '',
+                                        color: 'black',
+                                        fontSize: '12px',
+                                        fontWeight: 'bold'
+                                    }}
+                                    // Cambiamos el ícono según si es el seleccionado o si está en la lista de cercanos
+                                    icon={
+                                        selectedProperty && marker.id === selectedProperty.id 
+                                            ? "http://maps.google.com/mapfiles/ms/icons/green-dot.png"
+                                            : nearbyMarkers.some(n => n.id === marker.id)
+                                                ? "http://maps.google.com/mapfiles/ms/icons/yellow-dot.png"
+                                                : undefined
+                                    }
+                                />
+                            ))}
+                        </GoogleMap>
+                    </LoadScript>
+                </div>
 
             {/* Card de Propiedad: se muestra solo si se seleccionó un inmueble */}
             {selectedProperty && (

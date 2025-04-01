@@ -5,4 +5,5 @@ export interface IDocumento {
     tipoDocumento: TipoDocumento;
     archivo: File;
     inmuebleId?: number;
+    estatus?: string;
 }

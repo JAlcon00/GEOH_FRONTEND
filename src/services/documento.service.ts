@@ -51,21 +51,36 @@ class DocumentoService {
     }
 
     // Método para actualizar un documento por su ID
-    async actualizarDocumento(id: number, file: File, tipoDocumento?: string): Promise<any> {
+    async actualizarDocumento(
+        id: number,
+        file: File,
+        tipoDocumento?: string,
+        estatus?: string
+    ): Promise<any> {
         const formData = new FormData();
         formData.append('file', file);
         if (tipoDocumento) {
             formData.append('tipoDocumento', tipoDocumento);
         }
-
+        // Agregar el estatus en caso de que se envíe
+        if (estatus) {
+            formData.append('estatus', estatus);
+        }
+    
         const response = await api.put(`/documentos/${id}`, formData, {
             headers: {
                 'Content-Type': 'multipart/form-data'
             }
         });
-
+    
         return response.data;
     }
+
+    async actualizarEstatusDocumento(id: number, estatus: string): Promise<any> {
+        const response = await api.put(`/documentos/${id}/estatus`, { estatus });
+        return response.data;
+    }
+
 }
 
 export default new DocumentoService();
