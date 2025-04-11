@@ -30,57 +30,57 @@ const Header: React.FC = () => {
         }
       `}
     >
-      <div className="flex w-full items-center justify-between px-3 sm:px-4 md:px-6">
-        
-        {/* Contenedor para el título */}
-        <div className="min-w-0 flex items-center mr-2">
-          <h1
-            className="
-              text-white
-              font-semibold
-              text-sm sm:text-base md:text-lg
-              truncate
-              overflow-hidden
-              whitespace-nowrap
-              max-w-full
-            "
-            /* Ajuste opcional, si deseas un alto de línea pequeño:
-               style={{ lineHeight: '1.2rem' }} 
-            */
-          >
-            Panel de Control
-          </h1>
-        </div>
-
-        {/* Contenedor para el botón + el logo */}
-        <div className="flex items-center space-x-2">
-          {/* Botón para crear nueva solicitud */}
-          <button
-            onClick={() => setShowForm(true)}
-            aria-label="Crear nueva solicitud"
-            className="
-              flex items-center justify-center
-              px-2 py-1 sm:px-3 sm:py-2
-              bg-red-700 hover:bg-red-600
-              text-white text-xs sm:text-sm
-              rounded-full
-              transition-colors duration-200
-              font-medium
-              shadow-md
-            "
-          >
-            <PlusOutlined className="mr-0 sm:mr-2" />
-            <span className="hidden sm:inline">Nueva solicitud</span>
-          </button>
-
-          {/* Logo */}
-          <img
-            src={logo}
-            alt="logo"
-            className="h-6 w-auto sm:h-8 object-contain"
-          />
-        </div>
+    <div className="flex w-full items-center justify-between px-3 sm:px-4 md:px-6">
+      
+      {/* Contenedor para el título */}
+      <div className="min-w-0 flex items-center mr-2">
+        <h1
+        className="
+          text-white
+          font-semibold
+          text-sm sm:text-base md:text-lg
+          truncate
+          overflow-hidden
+          whitespace-nowrap
+          max-w-full
+        "
+        /* Ajuste opcional, si deseas un alto de línea pequeño:
+           style={{ lineHeight: '1.2rem' }} 
+        */
+        >
+        Panel de Control
+        </h1>
       </div>
+      
+      {/* Contenedor para el botón + el logo */}
+      <div className="flex items-center space-x-6 m-2">
+        {/* Botón para crear nueva solicitud */}
+        <button
+        onClick={() => setShowForm(true)}
+        aria-label="Crear nueva solicitud"
+        className="
+          flex items-center justify-center
+          px-2 py-1 sm:px-3 sm:py-2
+          bg-red-700 hover:bg-red-600
+          text-white text-xs sm:text-sm
+          rounded-full
+          transition-colors duration-200
+          font-medium
+          shadow-md
+        "
+        >
+        <PlusOutlined className="mr-0 sm:mr-2" />
+        <span className="hidden sm:inline">Nueva solicitud</span>
+        </button>
+        
+        {/* Logo */}
+        <img
+        src={logo}
+        alt="logo"
+        className="h-6 w-auto sm:h-8 object-contain"
+        />
+      </div>
+    </div>
 
       {/* Modal con el formulario */}
       {showForm && (
