@@ -80,14 +80,18 @@ const Sidebar: React.FC = () => {
           {collapsed ? 'GH' : 'Geo-H'}
         </h2>
       </div>
+      
       <div className="flex justify-center py-2 border-t border-b border-red-900">
         <button
           onClick={toggleCollapsed}
+          aria-label={collapsed ? "Expandir menú" : "Colapsar menú"}
+          aria-expanded={!collapsed}
           className="text-white text-lg hover:text-red-300 transition-colors duration-200 p-2"
         >
           {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
         </button>
       </div>
+      
       <Menu
         theme="dark"
         mode="inline"

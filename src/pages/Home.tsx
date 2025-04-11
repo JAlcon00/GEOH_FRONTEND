@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
+import { GoogleMap, Marker } from '@react-google-maps/api';
+import useGoogleMaps from '..//hook/useGoogleMaps';
 import { FaFileAlt, FaSearch } from 'react-icons/fa';
 import { buscarInmuebles } from '../services/search.service';
 import { getInmueblesByCliente } from '../services/inmueble.service';
@@ -28,7 +29,7 @@ interface Inmueble {
 const containerStyle = {
     width: '80%',
     height: '500px',
-    margin: '0 auto',            
+    margin: '0 auto',
     borderRadius: '10px',
     boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
 
@@ -42,13 +43,14 @@ const haversineDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
     const dLat = toRad(lat2 - lat1);
     const dLon = toRad(lon2 - lon1);
     const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-              Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-              Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
 };
 
 const Home: React.FC = () => {
+    const { isLoaded, loadError } = useGoogleMaps();
     const [mapCenter, setMapCenter] = useState(center);
     const [selectedProperty, setSelectedProperty] = useState<Inmueble | null>(null);
     const [markers, setMarkers] = useState<Inmueble[]>([]);
@@ -56,6 +58,9 @@ const Home: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [suggestions, setSuggestions] = useState<any[]>([]);
     const [searchType, setSearchType] = useState<'nombre' | 'direccion' | 'rfc'>('direccion');
+
+    if (loadError) return <div>Error al cargar Google Maps</div>;
+    if (!isLoaded) return <div>Cargando mapa...</div>;
 
     const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;  // Removemos el trim() para permitir espacios
@@ -112,8 +117,8 @@ const Home: React.FC = () => {
 
     const isValidCoordinate = (coord: any): boolean => {
         if (coord?.ubicacionGeografica?.lat && coord?.ubicacionGeografica?.lon) {
-            return !isNaN(Number(coord.ubicacionGeografica.lat)) && 
-                   !isNaN(Number(coord.ubicacionGeografica.lon));
+            return !isNaN(Number(coord.ubicacionGeografica.lat)) &&
+                !isNaN(Number(coord.ubicacionGeografica.lon));
         }
         return !isNaN(Number(coord?.lat)) && !isNaN(Number(coord?.lon));
     };
@@ -121,17 +126,17 @@ const Home: React.FC = () => {
     const handleSearch = async (inputValue?: string) => {
         const term = inputValue ? inputValue : searchTerm;
         if (!term) return;
-    
+
         try {
             let inmuebles = [];
             const isNumeric = /^[0-9]+$/.test(term);
-    
+
             if (isNumeric && searchType === 'nombre') {
                 inmuebles = await getInmueblesByCliente(Number(term));
             } else {
                 const params = { [searchType]: term };
                 inmuebles = await buscarInmuebles(params);
-    
+
                 if (inmuebles.length === 0 && searchType === 'rfc') {
                     try {
                         const cliente = await getClienteByRFC(term);
@@ -143,10 +148,10 @@ const Home: React.FC = () => {
                     }
                 }
             }
-    
+
             if (inmuebles.length > 0) {
                 const primerInmueble = inmuebles[0];
-                
+
                 // Primero intentamos con las coordenadas existentes
                 if (isValidCoordinate(primerInmueble)) {
                     const coords = primerInmueble.ubicacionGeografica || primerInmueble;
@@ -154,7 +159,7 @@ const Home: React.FC = () => {
                         lat: Number(coords.lat),
                         lng: Number(coords.lon)
                     });
-                    
+
                     const markersValidos = inmuebles
                         .filter(isValidCoordinate)
                         .map((inmueble: Inmueble) => ({
@@ -168,14 +173,14 @@ const Home: React.FC = () => {
                     try {
                         console.log('Geocodificando dirección:', primerInmueble.direccion);
                         const geocoded = await geocodeAddress(primerInmueble.direccion);
-                        
+
                         if (geocoded) {
                             // Actualizamos el centro del mapa con las coordenadas geocodificadas
                             setMapCenter({
                                 lat: geocoded.lat,
                                 lng: geocoded.lon
                             });
-    
+
                             // Actualizamos los marcadores con las nuevas coordenadas
                             const markersGeocodificados = await Promise.all(
                                 inmuebles.map(async (inmueble: Inmueble) => {
@@ -191,7 +196,7 @@ const Home: React.FC = () => {
                                     return inmueble;
                                 })
                             );
-    
+
                             setMarkers(markersGeocodificados.filter(m => isValidCoordinate(m)));
                             setSelectedProperty(primerInmueble);
                         } else {
@@ -218,12 +223,12 @@ const Home: React.FC = () => {
         alert('Mostrando expediente del inmueble');
     };
 
-     // Nueva función para manejar el clic en un marcador:
-     const handleMarkerClick = (marker: Inmueble) => {
+    // Nueva función para manejar el clic en un marcador:
+    const handleMarkerClick = (marker: Inmueble) => {
         setSelectedProperty(marker);
         const radius = 1000; // radio en metros
         // Filtramos los marcadores que se encuentren en un radio menor a 1000 m del seleccionado
-        const nearby = markers.filter(m => 
+        const nearby = markers.filter(m =>
             m.id !== marker.id &&
             haversineDistance(
                 Number(m.lat),
@@ -239,7 +244,7 @@ const Home: React.FC = () => {
         <div className="container mx-auto p-4">
             {/* Barra de Búsqueda con Selector */}
             <div className="flex justify-center mb-4 items-center gap-2 relative">
-                
+
                 <input
                     type="text"
                     placeholder={`Buscar por ${searchType}...`}
@@ -261,7 +266,7 @@ const Home: React.FC = () => {
                 >
                     <option value="direccion">Dirección</option>
                     <option value="nombre">Nombre</option>
-                    
+
                     <option value="rfc">RFC</option>
                 </select>
                 {suggestions.length > 0 && (
@@ -280,80 +285,75 @@ const Home: React.FC = () => {
             </div>
 
             <div className="flex flex-col lg:flex-row gap-4">
-            {/* Mapa: ocupa el 100% en móvil y 66% en pantallas grandes */}
-            <div className={selectedProperty ? "w-full lg:w-2/3" : "w-full"}>
-                    <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
-                        <GoogleMap
-                            mapContainerStyle={containerStyle}
-                            center={mapCenter}
-                            zoom={15}
-                        >
-                            {markers.map((marker, index) => (
-                                <Marker
-                                    key={index}
-                                    position={{
-                                        lat: Number(marker.lat),
-                                        lng: Number(marker.lon)
-                                    }}
-                                    // Llamamos a handleMarkerClick para actualizar el inmueble seleccionado y los cercanos
-                                    onClick={() => handleMarkerClick(marker)}
-                                    // Usamos la propiedad label para mostrar el precio
-                                    label={{
-                                        text: marker.nombre ? `$${marker.nombre}` : '',
-                                        color: 'black',
-                                        fontSize: '12px',
-                                        fontWeight: 'bold'
-                                    }}
-                                    // Cambiamos el ícono según si es el seleccionado o si está en la lista de cercanos
-                                    icon={
-                                        selectedProperty && marker.id === selectedProperty.id 
-                                            ? "http://maps.google.com/mapfiles/ms/icons/green-dot.png"
-                                            : nearbyMarkers.some(n => n.id === marker.id)
-                                                ? "http://maps.google.com/mapfiles/ms/icons/yellow-dot.png"
-                                                : undefined
-                                    }
-                                />
-                            ))}
-                        </GoogleMap>
-                    </LoadScript>
+                {/* Mapa: ocupa el 100% en móvil y 66% en pantallas grandes */}
+                <div className={selectedProperty ? "w-full lg:w-2/3" : "w-full"}>
+                    <GoogleMap
+                        mapContainerStyle={containerStyle}
+                        center={mapCenter}
+                        zoom={15}
+                    >
+                        {markers.map((marker, index) => (
+                            <Marker
+                                key={index}
+                                position={{
+                                    lat: Number(marker.lat),
+                                    lng: Number(marker.lon)
+                                }}
+                                onClick={() => handleMarkerClick(marker)}
+                                label={{
+                                    text: marker.nombre ? `$${marker.nombre}` : '',
+                                    color: 'black',
+                                    fontSize: '12px',
+                                    fontWeight: 'bold'
+                                }}
+                                icon={
+                                    selectedProperty && marker.id === selectedProperty.id
+                                        ? "http://maps.google.com/mapfiles/ms/icons/green-dot.png"
+                                        : nearbyMarkers.some(n => n.id === marker.id)
+                                            ? "http://maps.google.com/mapfiles/ms/icons/yellow-dot.png"
+                                            : undefined
+                                }
+                            />
+                        ))}
+                    </GoogleMap>
                 </div>
 
-            {/* Card de Propiedad: se muestra solo si se seleccionó un inmueble */}
-            {selectedProperty && (
-                <div className="w-full lg:w-1/3">
-                    {searchType === 'direccion' && selectedProperty?.clienteId ? (
-                        <InmuebleByCliente clienteId={selectedProperty.clienteId} />
-                    ) : (
-                        <div className="mt-4 p-4 bg-white shadow rounded-lg">
-                            <img
-                                src={selectedProperty.image}
-                                alt="Imagen del inmueble"
-                                className="w-full h-40 object-cover rounded-lg mb-4"
-                            />
-                            <div className="mb-2">
-                                <p className="font-bold">Dirección:</p>
-                                <p>{selectedProperty.direccion}</p>
-                            </div>
-                            {selectedProperty.precio && (
+                {/* Card de Propiedad: se muestra solo si se seleccionó un inmueble */}
+                {selectedProperty && (
+                    <div className="w-full lg:w-1/3">
+                        {searchType === 'direccion' && selectedProperty?.clienteId ? (
+                            <InmuebleByCliente clienteId={selectedProperty.clienteId} />
+                        ) : (
+                            <div className="mt-4 p-4 bg-white shadow rounded-lg">
+                                <img
+                                    src={selectedProperty.image}
+                                    alt="Imagen del inmueble"
+                                    className="w-full h-40 object-cover rounded-lg mb-4"
+                                />
                                 <div className="mb-2">
-                                    <p className="font-bold">Precio:</p>
-                                    <p>{selectedProperty.precio}</p>
+                                    <p className="font-bold">Dirección:</p>
+                                    <p>{selectedProperty.direccion}</p>
                                 </div>
-                            )}
-                            <button
-                                onClick={handleVerExpediente}
-                                className="mt-4 px-4 py-2 bg-red-500 text-white rounded-lg flex items-center gap-2 hover:bg-red-700"
-                            >
-                                <FaFileAlt />
-                                Revisar Expediente
-                            </button>
-                        </div>
-                    )}
-                </div>
-            )}
+                                {selectedProperty.precio && (
+                                    <div className="mb-2">
+                                        <p className="font-bold">Precio:</p>
+                                        <p>{selectedProperty.precio}</p>
+                                    </div>
+                                )}
+                                <button
+                                    onClick={handleVerExpediente}
+                                    className="mt-4 px-4 py-2 bg-red-500 text-white rounded-lg flex items-center gap-2 hover:bg-red-700"
+                                >
+                                    <FaFileAlt />
+                                    Revisar Expediente
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
         </div>
-    </div>
-        
+
     );
 };
 

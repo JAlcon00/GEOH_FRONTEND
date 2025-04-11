@@ -37,13 +37,16 @@ const Header: React.FC = () => {
                 </div>
 
                 <nav className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto mt -2 sm:mt-0">
+
                     <button
                         onClick={() => setShowForm(true)}
+                        aria-label="Crear nueva solicitud"
                         className="w-full sm:w-auto px-4 py-2 border-none bg-red-950 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 text-sm"
                     >
                         <PlusOutlined className="mr-1 sm:mr-2" />
                         Nueva solicitud
                     </button>
+
                     <div className="flex items-center">
                         <img
                             src={logo}
