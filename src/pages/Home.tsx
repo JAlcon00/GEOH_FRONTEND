@@ -59,45 +59,61 @@ const Home: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [suggestions, setSuggestions] = useState<any[]>([]);
     const [searchType, setSearchType] = useState<'nombre' | 'direccion' | 'rfc'>('direccion');
+    const [resultProperties, setResultProperties] = useState<Inmueble[]>([]);
+
 
     if (loadError) return <div>Error al cargar Google Maps</div>;
     if (!isLoaded) return <div>Cargando mapa...</div>;
 
     // Manejo del input de búsqueda
     const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value; // Se permite espacios
+        // Obtén el valor del input
+        const value = e.target.value;
+        // Actualiza el estado para el término de búsqueda
         setSearchTerm(value);
-
-        // Validación para el campo RFC; para los demás se cuenta la cantidad de caracteres sin espacios
-        if (searchType === 'rfc') {
+      
+        // Si el valor (después de quitar espacios) es menor a 3 caracteres, vacía las sugerencias
+        if (value.trim().length < 3) {
+          setSuggestions([]);
+          return;
+        }
+      
+        try {
+          // Caso búsqueda por dirección: usa la API de autocompletado de Google
+          if (searchType === 'direccion') {
+            // getAutocompletePredictions es una función que debe retornar un arreglo de predicciones
+            const predictions = await getAutocompletePredictions(value);
+            setSuggestions(predictions);
+          }
+          // Caso búsqueda por RFC: se utiliza el término recortado para evitar espacios al inicio o final
+          else if (searchType === 'rfc') {
             const trimmedValue = value.trim();
             if (trimmedValue.length >= 3) {
-                try {
-                    const params = { [searchType]: trimmedValue };
-                    const results = await buscarInmuebles(params);
-                    setSuggestions(results);
-                } catch (error) {
-                    console.error('Error obteniendo sugerencias:', error);
-                    setSuggestions([]);
-                }
+              // Se usa la función buscarInmuebles (o la API correspondiente) enviando el parámetro rfc
+              const params = { rfc: trimmedValue };
+              const results = await buscarInmuebles(params);
+              setSuggestions(results);
             } else {
-                setSuggestions([]);
+              setSuggestions([]);
             }
-        } else {
+          }
+          // Caso búsqueda por nombre: se valida que la cadena sin espacios tenga al menos 3 caracteres
+          else if (searchType === 'nombre') {
             if (value.replace(/\s/g, '').length >= 3) {
-                try {
-                    const params = { [searchType]: value };
-                    const results = await buscarInmuebles(params);
-                    setSuggestions(results);
-                } catch (error) {
-                    console.error('Error obteniendo sugerencias:', error);
-                    setSuggestions([]);
-                }
+              // Se utiliza buscarInmuebles enviando el parámetro nombre
+              const params = { nombre: value };
+              const results = await buscarInmuebles(params);
+              setSuggestions(results);
             } else {
-                setSuggestions([]);
+              setSuggestions([]);
             }
+          }
+        } catch (error) {
+          console.error('Error obteniendo sugerencias:', error);
+          setSuggestions([]);
         }
-    };
+      };
+      
 
     const handleSuggestionSelect = (item: any) => {
         const termino = item[searchType] || '';
@@ -122,72 +138,93 @@ const Home: React.FC = () => {
 
     // Función principal de búsqueda
     const handleSearch = async (inputValue?: string) => {
-        const term = inputValue ? inputValue : searchTerm;
+        // Usamos el valor del parámetro o el estado searchTerm
+        const term = inputValue || searchTerm;
         if (!term) return;
-
+      
         try {
-            let inmuebles: Inmueble[] = [];
-            const isNumeric = /^[0-9]+$/.test(term);
-
-            if (isNumeric && searchType === 'nombre') {
-                inmuebles = await getInmueblesByCliente(Number(term));
-            } else {
-                const params = { [searchType]: term };
-                inmuebles = await buscarInmuebles(params);
-                if (inmuebles.length === 0 && searchType === 'rfc') {
-                    try {
-                        const cliente = await getClienteByRFC(term);
-                        if (cliente && cliente.id) {
-                            inmuebles = await getInmueblesByCliente(cliente.id);
-                        }
-                    } catch (error) {
-                        console.warn('No se encontró cliente por RFC:', error);
-                    }
+          let inmuebles: Inmueble[] = [];
+          const isNumeric = /^[0-9]+$/.test(term);
+          // Caso búsqueda por dirección: filtramos para coincidencia exacta
+          if (searchType === 'direccion') {
+            // Se realiza la búsqueda (asegúrate que la API busque por dirección)
+            inmuebles = await buscarInmuebles({ direccion: term });
+            // Filtramos para que la dirección coincida exactamente (ignora mayúsculas y espacios)
+            inmuebles = inmuebles.filter(inmueble =>
+              inmueble.direccion.trim().toLowerCase() === term.trim().toLowerCase()
+            );
+          }
+          // Caso búsqueda por nombre o RFC
+          else if (searchType === 'nombre' || searchType === 'rfc') {
+            const params = { [searchType]: term };
+            inmuebles = await buscarInmuebles(params);
+            
+            // Para RFC, si no se obtienen resultados directos, intenta obtener el cliente y sus inmuebles
+            if (inmuebles.length === 0 && searchType === 'rfc') {
+              try {
+                const cliente = await getClienteByRFC(term);
+                if (cliente && cliente.id) {
+                  inmuebles = await getInmueblesByCliente(cliente.id);
                 }
+              } catch (error) {
+                console.warn('No se encontró cliente por RFC:', error);
+              }
             }
-
-            if (inmuebles.length > 0) {
-                const primerInmueble = inmuebles[0];
-                if (isValidCoordinate(primerInmueble)) {
-                    const coords = primerInmueble.ubicacionGeografica || primerInmueble;
-                    setMapCenter({ lat: Number(coords.lat), lng: Number(coords.lon) });
-                    const markersValidos = inmuebles
-                        .filter(isValidCoordinate)
-                        .map((inmueble) => ({ ...inmueble, lat: Number(inmueble.lat), lon: Number(inmueble.lon) }));
-                    setMarkers(markersValidos);
-                } else {
-                    try {
-                        const geocoded = await geocodeAddress(primerInmueble.direccion);
-                        if (geocoded) {
-                            setMapCenter({ lat: geocoded.lat, lng: geocoded.lon });
-                            const markersGeocodificados = await Promise.all(
-                                inmuebles.map(async (inmueble) => {
-                                    if (!isValidCoordinate(inmueble)) {
-                                        const coords = await geocodeAddress(inmueble.direccion);
-                                        return coords ? { ...inmueble, lat: coords.lat, lon: coords.lon, direccion: coords.formattedAddress || inmueble.direccion } : inmueble;
-                                    }
-                                    return inmueble;
-                                })
-                            );
-                            setMarkers(markersGeocodificados.filter(m => isValidCoordinate(m)));
-                            setSelectedProperty(primerInmueble);
-                        } else {
-                            alert('No se pudo obtener la ubicación del inmueble');
-                        }
-                    } catch (error) {
-                        console.error('Error al geocodificar:', error);
-                        alert('Error al obtener las coordenadas de la dirección');
-                    }
-                }
+          }
+          
+          // Actualizamos el estado que almacena los resultados de la búsqueda para la renderización
+          setResultProperties(inmuebles);
+      
+          // Si se encuentran resultados, se actualiza el mapa
+          if (inmuebles.length > 0) {
+            const primerInmueble = inmuebles[0];
+      
+            // Si el primer inmueble tiene coordenadas válidas, se usan para centrar el mapa
+            if (isValidCoordinate(primerInmueble)) {
+              const coords = primerInmueble.ubicacionGeografica || primerInmueble;
+              setMapCenter({ lat: Number(coords.lat), lng: Number(coords.lon) });
+              // Se generan los markers para todos los inmuebles con coordenadas válidas
+              const markersValidos = inmuebles
+                .filter(isValidCoordinate)
+                .map(inmueble => ({
+                  ...inmueble,
+                  lat: Number(inmueble.lat),
+                  lon: Number(inmueble.lon)
+                }));
+              setMarkers(markersValidos);
             } else {
-                alert('No se encontraron resultados');
+              // Si no hay coordenadas, se intenta geocodificar la dirección del primer inmueble
+              const geocoded = await geocodeAddress(primerInmueble.direccion);
+              if (geocoded) {
+                setMapCenter({ lat: geocoded.lat, lng: geocoded.lon });
+                // Para aquellos inmuebles sin coordenadas válidas, se intenta geocodificarlos individualmente
+                const markersGeocodificados = await Promise.all(
+                  inmuebles.map(async (inmueble) => {
+                    if (!isValidCoordinate(inmueble)) {
+                      const coords = await geocodeAddress(inmueble.direccion);
+                      return coords
+                        ? { ...inmueble, lat: coords.lat, lon: coords.lon, direccion: coords.formattedAddress || inmueble.direccion }
+                        : inmueble;
+                    }
+                    return inmueble;
+                  })
+                );
+                setMarkers(markersGeocodificados.filter(isValidCoordinate));
+              } else {
+                alert('No se pudo obtener la ubicación del inmueble');
                 setMarkers([]);
+              }
             }
+          } else {
+            alert('No se encontraron resultados');
+            setMarkers([]);
+          }
         } catch (error) {
-            console.error('Error en la búsqueda:', error);
-            alert('Ocurrió un error al buscar. Intente de nuevo.');
+          console.error('Error en la búsqueda:', error);
+          alert('Ocurrió un error al buscar. Intente de nuevo.');
         }
-    };
+      };
+      
 
     const handleVerExpediente = () => {
         alert('Mostrando expediente del inmueble');
