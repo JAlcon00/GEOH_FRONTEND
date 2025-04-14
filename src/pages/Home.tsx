@@ -205,9 +205,9 @@ const Home: React.FC = () => {
 
     return (
         <div className="container mx-auto p-4">
-            {/* Barra de Búsqueda con Selector */}
+            {/* Área de búsqueda */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-2 mb-4">
-                {/* Contenedor que agrupa el input y el dropdown */}
+                {/* Contenedor del input y dropdown */}
                 <div className="relative w-full sm:w-80">
                     <input
                         type="text"
@@ -218,6 +218,7 @@ const Home: React.FC = () => {
                         onKeyDown={handleKeyDown}
                     />
 
+                    {/* Dropdown de sugerencias */}
                     {suggestions.length > 0 && (
                         <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 shadow-lg rounded w-full z-50">
                             {suggestions.map((sug, index) => (
@@ -233,13 +234,15 @@ const Home: React.FC = () => {
                     )}
                 </div>
 
-                {/* Resto de elementos, como el botón y el select */}
+                {/* Botón de búsqueda */}
                 <button
                     onClick={() => handleSearch()}
                     className="p-2 hover:bg-gray-100 rounded-lg focus:outline-none"
                 >
                     <FaSearch className="w-5 h-5 text-gray-600" />
                 </button>
+
+                {/* Select para elegir el tipo de búsqueda */}
                 <select
                     value={searchType}
                     onChange={(e) => setSearchType(e.target.value as 'nombre' | 'direccion' | 'rfc')}
@@ -251,14 +254,12 @@ const Home: React.FC = () => {
                 </select>
             </div>
 
-
-            {/* Área principal: mapa y tarjeta de inmueble */}
+            {/* Resto del contenido (por ejemplo, mapa y tarjetas) */}
             <div className="flex flex-col lg:flex-row gap-4">
-                {/* Contenedor del mapa: ocupa el 100% en móvil y 66% en pantallas grandes */}
+                {/* Contenedor del mapa */}
                 <div className={selectedProperty ? "w-full lg:w-2/3" : "w-full"}>
                     <GoogleMap
                         mapContainerStyle={containerStyle}
-                        onLoad={() => console.log('Mapa cargado')}
                         center={mapCenter}
                         zoom={15}
                         options={{
@@ -267,20 +268,21 @@ const Home: React.FC = () => {
                             streetViewControl: false,
                             fullscreenControl: false,
                             clickableIcons: false,
-                            
-                            
-                          }}
+                        }}
                     >
                         {markers.map((marker, index) => (
                             <Marker
                                 key={index}
-                                position={{ lat: Number(marker.lat), lng: Number(marker.lon) }}
+                                position={{
+                                    lat: Number(marker.lat),
+                                    lng: Number(marker.lon),
+                                }}
                                 onClick={() => handleMarkerClick(marker)}
                                 label={{
                                     text: marker.nombre ? `$${marker.nombre}` : '',
                                     color: 'black',
                                     fontSize: '12px',
-                                    fontWeight: 'bold'
+                                    fontWeight: 'bold',
                                 }}
                                 icon={
                                     selectedProperty && marker.id === selectedProperty.id
@@ -294,7 +296,7 @@ const Home: React.FC = () => {
                     </GoogleMap>
                 </div>
 
-                {/* Tarjeta del inmueble: se muestra sólo si hay una propiedad seleccionada */}
+                {/* Tarjeta del inmueble */}
                 {selectedProperty && (
                     <div className="w-full lg:w-1/3">
                         {searchType === 'direccion' && selectedProperty?.clienteId ? (
