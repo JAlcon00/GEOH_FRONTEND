@@ -10,14 +10,7 @@ interface Inmueble {
 }
 
 const InmuebleCard: React.FC<Inmueble> = ({ id, direccion, valorMercado, foto, estatus }) => {
-    const [imgError, setImgError] = useState(false);
     const [showDocumentoModal, setShowDocumentoModal] = useState(false);
-
-    const handleError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-        if (!imgError) {
-            setImgError(true);
-        }
-    };
 
     return (
         <div className="bg-white shadow-xl rounded-xl p-6 w-full">
@@ -27,14 +20,6 @@ const InmuebleCard: React.FC<Inmueble> = ({ id, direccion, valorMercado, foto, e
             <h6 className="mb-2">
                 {estatus}
             </h6>
-            {foto && (
-                <img
-                    src={imgError ? '/fallback-image.png' : foto}
-                    alt={`Inmueble ${id}`}
-                    onError={handleError}
-                    className="mt-4 w-full max-h-72 object-cover rounded-lg shadow-md mb-6"
-                />
-            )}
             <p className="text-gray-600">
                 <strong>Dirección: </strong> {direccion}
             </p>
