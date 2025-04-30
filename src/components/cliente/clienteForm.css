@@ -1,24 +1,62 @@
-/* Contenedor principal del formulario */
+/* Contenedor principal del formulario con animación */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+    from { transform: translateX(-20px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(220, 38, 38, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+}
+
 .cliente-form {
     width: 100%; /* Ocupar el ancho completo del contenedor padre */
     max-width: 1350px; /* Limitar el ancho máximo */
     margin: 0 auto; /* Centrar horizontalmente */
-    max-height: 80vh;
+    max-height: 85vh;
     overflow-y: auto;
     background: white;
-    padding: 20px;
+    padding: 15px;
     border-radius: 10px;
+    animation: fadeIn 0.4s ease-out;
+    scrollbar-width: thin;
+    scrollbar-color: #d1d5db transparent;
 }
 
-.cliente-form__question{
+.cliente-form::-webkit-scrollbar {
+    width: 6px;
+}
+
+.cliente-form::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.cliente-form::-webkit-scrollbar-thumb {
+    background-color: #d1d5db;
+    border-radius: 20px;
+}
+
+.cliente-form__question {
     border-radius: 0.5rem; 
     background-color: #f8f9fa;
-    font-size: 20px;
+    font-size: 18px;
     font-weight: bold;
     margin: auto;
     padding: 20px;
-    
-    
+    animation: slideIn 0.5s ease-out;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.cliente-form__question:hover {
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    transform: translateY(-2px);
 }
 
 .cliente-form__rfc-container {
@@ -27,82 +65,157 @@
     align-items: center;
     height: 100%;
     width: 100%;
+    animation: fadeIn 0.5s ease-out;
 }
 
-
-.cliente-form__rfc{
-    width: 50%;
+.cliente-form__rfc {
+    width: 90%;
+    max-width: 400px;
     margin: auto;
     text-align: center;
-
 }
+
 .cliente-form__grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 30px;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    animation: fadeIn 0.5s ease-out;
 }
-
 
 /* Estilo individual de cada sección/columna */
 .cliente-form__columna {
     display: flex;
     flex-direction: column;
     gap: 10px;
+    animation: slideIn 0.5s ease-out;
+    transition: all 0.3s ease;
 }
 
-/* Estilos de los botones */
+.cliente-form__columna h3 {
+    position: relative;
+    padding-bottom: 8px;
+}
+
+.cliente-form__columna h3::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 40px;
+    height: 3px;
+    background-color: #dc2626; /* Rojo que coincide con la marca */
+    transition: width 0.3s ease;
+}
+
+.cliente-form__columna h3:hover::after {
+    width: 100%;
+}
+
+/* Estilos de los botones con animaciones */
 .btn-primary {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     color: #ffffff;
     padding: 0.5rem 1rem;
-    border-radius: 0.25rem; /* Botones redondeados */
+    border-radius: 0.375rem;
     transition: all 0.3s ease;
     font-size: 1rem;
     text-align: center;
     border: none;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-primary::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 5px;
+    height: 5px;
+    background: rgba(255, 255, 255, 0.5);
+    opacity: 0;
+    border-radius: 100%;
+    transform: translate(-50%, -50%) scale(1);
+    transition: all 0.5s ease;
+}
+
+.btn-primary:active::after {
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(15);
+    transition: all 0s;
 }
 
 .btn-primary:hover {
-    background-color: #0056b3; /* Azul oscuro al pasar el mouse */
-    transform: scale(1.05); /* Ligero efecto de agrandamiento */
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 7px 14px rgba(0, 0, 0, 0.2);
+}
+
+.btn-primary:active {
+    transform: translateY(1px) scale(0.98);
 }
 
 .btn-secondary {
-    background-color: #6c757d; /* Gris */
+    background-color: #6c757d;
     color: #ffffff;
     padding: 0.5rem 1rem;
-    border-radius: 0.25rem;
+    border-radius: 0.375rem;
     transition: all 0.3s ease;
     font-size: 1rem;
     border: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .btn-secondary:hover {
-    background-color: #565e64; /* Gris más oscuro */
-    transform: scale(1.05); /* Ligero efecto de agrandamiento */
+    background-color: #565e64;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
-/* Estilos de los inputs */
+.btn-secondary:active {
+    transform: translateY(1px);
+}
+
+/* Estilos de los inputs con animaciones */
 .input-primary {
     width: 100%;
-    padding: 8px;
-    border: 1px solid #ccc;
+    padding: 10px 12px;
+    border: 1px solid #e2e8f0;
     border-radius: 5px;
+    transition: all 0.3s ease;
+    font-size: 0.95rem;
+    background-color: #f9fafb;
 }
 
-.input-primary-rfc{
-    
-    width: 50%;
-    padding: 8px;
-    border: 1px solid #ccc;
+.input-primary-rfc {
+    width: 80%;
+    max-width: 300px;
+    padding: 10px 12px;
+    border: 1px solid #e2e8f0;
     border-radius: 5px;
+    transition: all 0.3s ease;
     text-transform: uppercase;
+    font-size: 1.1rem;
+    letter-spacing: 1px;
+    text-align: center;
+    background-color: #f9fafb;
 }
 
-.input-primary:focus {
-    border-color: #007bff; /* Azul cuando se enfoca */
-    outline: none; /* Elimina el contorno del navegador */
-    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25); /* Sombra azul */
+.input-primary:hover, .input-primary-rfc:hover {
+    border-color: #cbd5e1;
+    background-color: #ffffff;
+}
+
+.input-primary:focus, .input-primary-rfc:focus {
+    border-color: #dc2626;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2);
+    background-color: #ffffff;
 }
 
 /* Estilos para áreas de subida de documentos */
@@ -112,63 +225,99 @@
     align-items: center;
     text-align: center;
     width: 100%;
+    transition: all 0.3s ease;
 }
 
+.documento-input:hover {
+    transform: translateY(-2px);
+}
 
 .documento-input label {
     display: block;
-    margin-bottom: 0.5rem; /* Espacio entre etiqueta e input */
-    font-weight: bold;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #374151;
+    font-size: 0.95rem;
 }
 
 .documento-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr); /* 2 columnas */
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     gap: 20px;
 }
-
 
 .dropzone {
     width: 100%;
     min-height: 120px;
-    padding: 10px;
-    border: 2px dashed #ccc;
+    padding: 15px;
+    border: 2px dashed #cbd5e1;
     border-radius: 10px;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    transition: all 0.3s ease;
+    background-color: #f8fafc;
 }
 
-/* Diseño del modal */
+.dropzone:hover {
+    border-color: #dc2626;
+    background-color: #fef2f2;
+}
+
+.dropzone:focus, .dropzone:focus-within {
+    border-color: #dc2626;
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2);
+    animation: pulse 2s infinite;
+}
+
+.dropzone p {
+    margin: 0.5rem 0;
+    font-size: 0.9rem;
+}
+
+/* Modal con animaciones */
 .modal {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.6);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 50;
+    animation: fadeIn 0.3s ease-out;
 }
 
 .modal-content {
     max-width: 800px;
     padding: 20px;
+    animation: scaleIn 0.3s ease-out;
+    transform-origin: center;
 }
 
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
 
-/* Estilo del botón de cierre del modal */
+/* Botón de cierre mejorado */
 .modal-content button.close-btn {
     position: absolute;
     top: 1rem;
     right: 1rem;
-    background: #f8f9fa; /* Fondo gris claro */
+    background: #f8f9fa;
     border: none;
-    color: #6c757d; /* Gris */
+    color: #6c757d;
     font-size: 1.5rem;
     border-radius: 50%;
-    width: 2rem;
-    height: 2rem;
+    width: 2.5rem;
+    height: 2.5rem;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -179,22 +328,96 @@
 .close-btn:hover {
     background: #e0e0e0;
     color: #000000;
+    transform: rotate(90deg);
 }
 
 .modal-content button.close-btn:hover {
-    background: #e0e0e0; /* Fondo gris más oscuro */
-    color: #000000; /* Negro */
+    background: #dc2626;
+    color: #ffffff;
+    transform: rotate(90deg);
 }
 
-/* Responsividad */
+/* Responsividad mejorada */
+@media (max-width: 1200px) {
+    .cliente-form__grid {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 25px;
+    }
+}
+
+@media (max-width: 992px) {
+    .cliente-form__grid {
+        gap: 20px;
+    }
+    
+    .documento-grid {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+}
+
 @media (max-width: 768px) {
     .cliente-form__grid {
-        grid-template-columns: 1fr; /* Solo una columna en móviles */
+        grid-template-columns: 1fr;
         gap: 15px;
+    }
+    
+    .cliente-form {
+        padding: 12px;
+        max-height: 90vh;
     }
 
     .modal-content {
-        width: calc(100% - 2rem); /* Reduce el ancho en móviles */
-        padding: 1rem; /* Reduce el padding */
+        width: calc(100% - 2rem);
+        padding: 1rem;
     }
+    
+    .input-primary, .input-primary-rfc {
+        padding: 8px 10px;
+    }
+    
+    .documento-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .cliente-form {
+        padding: 10px;
+    }
+    
+    .cliente-form__question {
+        font-size: 16px;
+        padding: 15px;
+    }
+    
+    .cliente-form__grid {
+        gap: 12px;
+    }
+    
+    .btn-primary, .btn-secondary {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.9rem;
+    }
+    
+    .input-primary-rfc {
+        width: 100%;
+        max-width: none;
+    }
+}
+
+/* Clases auxiliares de animación para usar con React */
+.animate-fadeIn {
+    animation: fadeIn 0.5s ease-out;
+}
+
+.animate-slideIn {
+    animation: slideIn 0.5s ease-out;
+}
+
+.animate-scaleIn {
+    animation: scaleIn 0.4s ease-out;
+}
+
+.animate-pulse {
+    animation: pulse 2s infinite;
 }

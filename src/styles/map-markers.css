@@ -1,0 +1,128 @@
+/* Estilos para las etiquetas de marcadores */
+.custom-marker-label {
+  background-color: rgba(0, 0, 0, 0.75);
+  color: white;
+  padding: 6px 10px;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  white-space: nowrap;
+  font-size: 13px !important;
+  font-weight: bold;
+  border: 1.5px solid rgba(255, 255, 255, 0.8);
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  transition: all 0.3s ease;
+  max-width: 200px;
+}
+
+.label-aceptado {
+  background-color: rgba(39, 174, 96, 0.85);
+  border-color: #2ecc71;
+}
+
+.label-rechazado {
+  background-color: rgba(231, 76, 60, 0.85);
+  border-color: #e74c3c;
+}
+
+.label-pendiente {
+  background-color: rgba(241, 196, 15, 0.85);
+  border-color: #f1c40f;
+  color: #333;
+}
+
+.label-default {
+  background-color: rgba(52, 152, 219, 0.85);
+  border-color: #3498db;
+}
+
+/* Animación para el marcador actualmente seleccionado */
+.marker-selected {
+  animation: pulse 1.5s infinite;
+}
+
+.custom-marker-label:hover {
+  transform: scale(1.05);
+  z-index: 1001;
+}
+
+/* Crear animación de pulso */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Clase para precio destacado */
+.price-highlight {
+  font-weight: bold;
+  color: #FFD700;
+}
+
+/* Estilos para las imágenes de marcadores personalizados */
+.marker-img {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+}
+
+/* Estilos para marcadores en forma de gota de agua */
+.marker-droplet {
+  position: relative;
+  padding: 8px 12px;
+  border-radius: 12px 12px 12px 0;
+  transform: rotate(-45deg);
+  transform-origin: bottom left;
+}
+
+.marker-droplet-content {
+  transform: rotate(45deg);
+  display: block;
+}
+
+/* Variantes de colores para la gota según estado */
+.marker-droplet.label-aceptado {
+  background-color: rgba(39, 174, 96, 0.9);
+  box-shadow: 0 2px 8px rgba(39, 174, 96, 0.5);
+}
+
+.marker-droplet.label-rechazado {
+  background-color: rgba(231, 76, 60, 0.9);
+  box-shadow: 0 2px 8px rgba(231, 76, 60, 0.5);
+}
+
+.marker-droplet.label-pendiente {
+  background-color: rgba(241, 196, 15, 0.9);
+  box-shadow: 0 2px 8px rgba(241, 196, 15, 0.5);
+}
+
+.marker-droplet.label-default {
+  background-color: rgba(52, 152, 219, 0.9);
+  box-shadow: 0 2px 8px rgba(52, 152, 219, 0.5);
+}
+
+/* Mantener animación de pulso para marcadores con forma de gota */
+.marker-droplet.marker-selected {
+  animation: pulse 1.5s infinite;
+}
+
+/* Sombra para profundidad */
+.marker-droplet::after {
+  content: '';
+  position: absolute;
+  bottom: -3px;
+  left: 0;
+  width: 3px;
+  height: 3px;
+  background: inherit;
+  filter: blur(2px);
+  opacity: 0.7;
+}
+

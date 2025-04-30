@@ -13,6 +13,7 @@ interface Documento {
 
 interface DocumentoByInmuebleProps {
     inmuebleId: number;
+    onStatusUpdate?: () => void;
 }
 
 interface UpdateData {
@@ -21,7 +22,7 @@ interface UpdateData {
     editing?: boolean;
 }
 
-const DocumentoByInmueble: React.FC<DocumentoByInmuebleProps> = ({ inmuebleId }) => {
+const DocumentoByInmueble: React.FC<DocumentoByInmuebleProps> = ({ inmuebleId, onStatusUpdate }) => {
     const [documentos, setDocumentos] = useState<Documento[]>([]);
     const [updates, setUpdates] = useState<{ [id: number]: UpdateData }>({});
     // Para marcar documentos eliminados y así mostrar "Documento faltante"
@@ -51,13 +52,14 @@ const DocumentoByInmueble: React.FC<DocumentoByInmuebleProps> = ({ inmuebleId })
         try {
             await DocumentoService.actualizarEstatusDocumento(docId, updateData.newStatus);
             // Actualiza el estado de los documentos
-            fetchDocumentos();
+            await fetchDocumentos();
             setUpdates(prev => {
                 const copy = { ...prev };
                 copy[docId].newStatus = "";
                 console.log("Estatus actualizado:", copy[docId].newStatus);
                 return copy;
             });
+            onStatusUpdate?.();
         } catch (error) {
             console.error("Error al actualizar estatus:", error);
         }

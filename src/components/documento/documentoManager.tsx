@@ -5,9 +5,13 @@ import DocumentoByInmueble from './documentoByInmueble';
 interface DocumentoManagerProps {
     inmuebleId: number;
     onClose: () => void;
+    onStatusUpdate?: () => void   
 }
 
-const DocumentoManager: React.FC<DocumentoManagerProps> = ({ inmuebleId, onClose }) => {
+const DocumentoManager: React.FC<DocumentoManagerProps> = ({ inmuebleId, onClose, onStatusUpdate }) => {
+    // Si hay callback, no usarlo aquí para nada más; se pasa a DocumentoByInmueble
+    if (onStatusUpdate) { /* callback de actualización de estatus listo para usar */ }
+    
     // Aplica el efecto de desenfoque al contenido externo cuando el modal se abre
     useEffect(() => {
         const background = document.getElementById('app-content');
@@ -46,7 +50,7 @@ const DocumentoManager: React.FC<DocumentoManagerProps> = ({ inmuebleId, onClose
                     </button>
                 </div>
                 <div className="max-h-[70vh] overflow-y-auto">
-                    <DocumentoByInmueble inmuebleId={inmuebleId} />
+                    <DocumentoByInmueble inmuebleId={inmuebleId} onStatusUpdate={onStatusUpdate} />
                 </div>
             </div>
         </div>,

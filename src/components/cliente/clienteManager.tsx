@@ -42,7 +42,8 @@ interface VirtualizedClienteListProps {
     handleFetchInmuebles: (id: number) => void;
 }
 
-
+// Obtener el tipo de usuario desde localStorage
+const tipoUsuario = localStorage.getItem('tipo_usuario');
 
 // Componente memorizado para la fila de cliente
 const ClienteRow = memo<ClienteRowProps>(({
@@ -91,12 +92,16 @@ const ClienteRow = memo<ClienteRowProps>(({
                     <button className="p-1 hover:bg-gray-100 rounded-full" onClick={() => openDetalleCliente(cliente.rfc!)}>
                         <FaEye className="w-5 h-5 text-gray-600" />
                     </button>
-                    <button className="p-1 hover:bg-gray-100 rounded-full" onClick={() => handleEdit(cliente)}>
-                        <FaEdit className="w-5 h-5 text-yellow-500" />
-                    </button>
-                    <button className="p-1 hover:bg-gray-100 rounded-full" onClick={() => openModal(cliente.id)}>
-                        <FaTrash className="w-5 h-5 text-red-500" />
-                    </button>
+                    {tipoUsuario === 'administrador' && (
+                        <>
+                            <button className="p-1 hover:bg-gray-100 rounded-full" onClick={() => handleEdit(cliente)}>
+                                <FaEdit className="w-5 h-5 text-yellow-500" />
+                            </button>
+                            <button className="p-1 hover:bg-gray-100 rounded-full" onClick={() => openModal(cliente.id)}>
+                                <FaTrash className="w-5 h-5 text-red-500" />
+                            </button>
+                        </>
+                    )}
                     <button className="hidden sm:block p-1 hover:bg-gray-100 rounded-full" onClick={() => handleFetchInmuebles(cliente.id)}>
                         <FaHome className="w-5 h-5 text-green-500" />
                     </button>
@@ -163,20 +168,24 @@ const VirtualizedClienteList = memo<VirtualizedClienteListProps>(({
                             >
                                 <FaEye className="w-5 h-5 text-gray-600" />
                             </button>
-                            <button
-                                className="p-1 hover:bg-gray-100 rounded-full"
-                                onClick={() => handleEdit(cliente)}
-                                aria-label="Editar cliente"
-                            >
-                                <FaEdit className="w-5 h-5 text-yellow-500" />
-                            </button>
-                            <button
-                                className="p-1 hover:bg-gray-100 rounded-full"
-                                onClick={() => openModal(cliente.id)}
-                                aria-label="Eliminar cliente"
-                            >
-                                <FaTrash className="w-5 h-5 text-red-500" />
-                            </button>
+                            {tipoUsuario === 'administrador' && (
+                                <>
+                                    <button
+                                        className="p-1 hover:bg-gray-100 rounded-full"
+                                        onClick={() => handleEdit(cliente)}
+                                        aria-label="Editar cliente"
+                                    >
+                                        <FaEdit className="w-5 h-5 text-yellow-500" />
+                                    </button>
+                                    <button
+                                        className="p-1 hover:bg-gray-100 rounded-full"
+                                        onClick={() => openModal(cliente.id)}
+                                        aria-label="Eliminar cliente"
+                                    >
+                                        <FaTrash className="w-5 h-5 text-red-500" />
+                                    </button>
+                                </>
+                            )}
                             <button 
                                 className="hidden sm:block p-1 hover:bg-gray-100 rounded-full" 
                                 onClick={() => handleFetchInmuebles(cliente.id)}>
@@ -371,44 +380,129 @@ const ClienteManager: React.FC = memo(() => {
                     handleFetchInmuebles={handleFetchInmuebles}
                 />
             ) : (
-                // Renderizado normal para listas pequeñas
+                // Renderizado responsivo: tabla en md+ y tarjetas en móvil
                 <div className="overflow-x-auto rounded-lg border border-gray-200">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                            {tipoPersonaFiltro === 'fisica' ? (
-                                <tr>
-                                    <th className="hidden md:table-cell py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
-                                    <th className="hidden md:table-cell py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Apellidos</th>
-                                    <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">RFC</th>
-                                    <th className="hidden lg:table-cell py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Nac.</th>
-                                    <th className="hidden md:table-cell py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contacto</th>
-                                    <th className="py-3 px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                                </tr>
-                            ) : (
-                                <tr>
-                                    <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Razón Social</th>
-                                    <th className="hidden md:table-cell py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Representante</th>
-                                    <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">RFC</th>
-                                    <th className="hidden lg:table-cell py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Const.</th>
-                                    <th className="hidden md:table-cell py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contacto</th>
-                                    <th className="py-3 px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                                </tr>
+                  {/* Tabla tradicional en md+ */}
+                  <table className="hidden md:table min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      {tipoPersonaFiltro === 'fisica' ? (
+                        <tr>
+                          <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+                          <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Apellidos</th>
+                          <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">RFC</th>
+                          <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Nac.</th>
+                          <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contacto</th>
+                          <th className="py-3 px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                        </tr>
+                      ) : (
+                        <tr>
+                          <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Razón Social</th>
+                          <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Representante</th>
+                          <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">RFC</th>
+                          <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Const.</th>
+                          <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contacto</th>
+                          <th className="py-3 px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                        </tr>
+                      )}
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {filteredClientes.map((cliente) => (
+                        <ClienteRow
+                          key={cliente.id}
+                          cliente={cliente}
+                          tipoPersonaFiltro={tipoPersonaFiltro}
+                          openDetalleCliente={openDetalleCliente}
+                          handleEdit={handleEdit}
+                          openModal={openModal}
+                          handleFetchInmuebles={handleFetchInmuebles}
+                        />
+                      ))}
+                    </tbody>
+                  </table>
+                  {/* Tarjetas para móvil */}
+                  <div className="md:hidden flex flex-col gap-3 p-1">
+                    {filteredClientes.length === 0 ? (
+                      <div className="text-center py-6 text-gray-400 bg-white rounded-lg">No hay clientes registrados.</div>
+                    ) : (
+                      filteredClientes.map(cliente => (
+                        <div key={cliente.id} className="bg-white rounded-lg shadow border p-3 flex flex-col gap-2">
+                          {tipoPersonaFiltro === 'fisica' ? (
+                            <>
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs text-gray-500 font-semibold">Nombre</span>
+                                <span className="text-sm font-bold text-gray-700">{cliente.nombre}</span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs text-gray-500 font-semibold">Apellidos</span>
+                                <span className="text-sm text-gray-700">{cliente.apellidoPaterno} {cliente.apellidoMaterno}</span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs text-gray-500 font-semibold">RFC</span>
+                                <span className="text-sm text-gray-700">{cliente.rfc}</span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs text-gray-500 font-semibold">Fecha Nac.</span>
+                                <span className="text-sm text-gray-700">{cliente.fechaNacimiento ? new Date(cliente.fechaNacimiento).toLocaleDateString() : 'N/A'}</span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs text-gray-500 font-semibold">Correo</span>
+                                <span className="text-sm text-gray-700">{cliente.correo}</span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs text-gray-500 font-semibold">Teléfono</span>
+                                <span className="text-sm text-gray-700">{cliente.telefono}</span>
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs text-gray-500 font-semibold">Razón Social</span>
+                                <span className="text-sm font-bold text-gray-700">{cliente.razonSocial}</span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs text-gray-500 font-semibold">Representante</span>
+                                <span className="text-sm text-gray-700">{cliente.representanteLegal}</span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs text-gray-500 font-semibold">RFC</span>
+                                <span className="text-sm text-gray-700">{cliente.rfc}</span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs text-gray-500 font-semibold">Fecha Const.</span>
+                                <span className="text-sm text-gray-700">{cliente.fechaConstitucion ? new Date(cliente.fechaConstitucion).toLocaleDateString() : 'N/A'}</span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs text-gray-500 font-semibold">Correo</span>
+                                <span className="text-sm text-gray-700">{cliente.correo}</span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs text-gray-500 font-semibold">Teléfono</span>
+                                <span className="text-sm text-gray-700">{cliente.telefono}</span>
+                              </div>
+                            </>
+                          )}
+                          <div className="flex justify-end gap-2 mt-2">
+                            <button className="p-1 hover:bg-gray-100 rounded-full" onClick={() => openDetalleCliente(cliente.rfc!)}>
+                              <FaEye className="w-5 h-5 text-gray-600" />
+                            </button>
+                            {tipoUsuario === 'administrador' && (
+                              <>
+                                <button className="p-1 hover:bg-gray-100 rounded-full" onClick={() => handleEdit(cliente)}>
+                                  <FaEdit className="w-5 h-5 text-yellow-500" />
+                                </button>
+                                <button className="p-1 hover:bg-gray-100 rounded-full" onClick={() => openModal(cliente.id)}>
+                                  <FaTrash className="w-5 h-5 text-red-500" />
+                                </button>
+                              </>
                             )}
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                            {filteredClientes.map((cliente) => (
-                                <ClienteRow
-                                    key={cliente.id}
-                                    cliente={cliente}
-                                    tipoPersonaFiltro={tipoPersonaFiltro}
-                                    openDetalleCliente={openDetalleCliente}
-                                    handleEdit={handleEdit}
-                                    openModal={openModal}
-                                    handleFetchInmuebles={handleFetchInmuebles}
-                                />
-                            ))}
-                        </tbody>
-                    </table>
+                            <button className="p-1 hover:bg-gray-100 rounded-full" onClick={() => handleFetchInmuebles(cliente.id)}>
+                              <FaHome className="w-5 h-5 text-green-500" />
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
             )}
 
@@ -438,10 +532,10 @@ const ClienteManager: React.FC = memo(() => {
 
             {detalleClienteRFC && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+                    <div className="bg-white pt-10 pb-6 px-6 rounded-lg shadow-lg w-full max-w-md relative">
                         <button
                             type="button"
-                            className="absolute top-4 right-4 text-gray-600 hover:text-gray-800"
+                            className="absolute top-2 right-2 text-gray-700 hover:text-gray-900 text-2xl"
                             onClick={closeDetalleCliente}
                         >
                             &times;
@@ -453,10 +547,10 @@ const ClienteManager: React.FC = memo(() => {
 
             {inmuebles && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+                    <div className="bg-white pt-10 pb-6 px-6 rounded-lg shadow-lg w-full max-w-md relative">
                         <button
                             type="button"
-                            className="absolute top-3 right-3 text-gray-700 hover:text-gray-900 text-2xl"
+                            className="absolute top-2 right-2 text-gray-700 hover:text-gray-900 text-2xl"
                             onClick={closehandleFetchInmuebles}
                         >
                             &times;

@@ -28,3 +28,31 @@ dist/
 .env
 *.log
 keyfile.json
+
+# Ignorar carpetas y archivos comunes
+.parcel-cache/
+.turbo/
+.next/
+.cache/
+coverage/
+.sass-cache/
+.nyc_output/
+.history/
+
+# Ignorar archivos de configuración y temporales
+.env*
+*.tmp
+*.temp
+*.local.js
+*.local.json
+*.test.ts
+*.spec.ts
+.eslintcache
+Thumbs.db
+.DS_Store
+
+# Ignorar archivos de configuración de entorno
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local

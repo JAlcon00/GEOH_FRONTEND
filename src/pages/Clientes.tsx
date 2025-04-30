@@ -18,6 +18,7 @@ const Clientes: React.FC = () => {
                 minHeight: 'calc(100vh - 64px)',
             }}
         >
+            
             <ClienteManager />
         </Content>
     );

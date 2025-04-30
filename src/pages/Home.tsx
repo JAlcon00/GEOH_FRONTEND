@@ -6,28 +6,20 @@ import { buscarInmuebles } from '../services/search.service';
 import { getInmueblesByCliente, getInmuebleById } from '../services/inmueble.service';
 import { getClienteByRFC, getClienteById } from '../services/cliente.service';
 import { geocodeAddress } from '../services/geocode.service';
-import InmuebleByCliente from '../components/inmueble/inmuebleByCliente';
 import DocumentoManager from '../components/documento/documentoManager';
+import Loader from '../components/Layout/Loader';
+import './Home.css';
+import { IInmueble } from '../types/inmueble.types';
 
-interface Inmueble {
-  id: number;
-  direccion: string;
-  lat?: number;
-  lon?: number;
-  precio?: string;
-  image?: string;
-  nombre?: string;
-  rfc?: string;
-  ubicacionGeografica?: {
-    lat: number;
-    lon: number;
-  };
-  clienteId?: number;
-  valorMercado?: string;
-  // Campos adicionales para la información del cliente
+interface InmuebleMap extends IInmueble {
+  // Permitir acceso a ubicacionGeografica sin errores de tipo
+  ubicacionGeografica?: any;
+
+  lat: number;
+  lon: number;
   nombreCliente?: string;
   domicilioCliente?: string;
-  foto?: string;
+  image?: string | File;
   estatus?: string;
 }
 
@@ -48,8 +40,8 @@ const haversineDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
   const dLat = toRad(lat2 - lat1);
   const dLon = toRad(lon2 - lon1);
   const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 };
@@ -57,18 +49,75 @@ const haversineDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
 const Home: React.FC = () => {
   const { isLoaded, loadError } = useGoogleMaps();
   const [mapCenter, setMapCenter] = useState(center);
-  const [selectedProperty, setSelectedProperty] = useState<Inmueble | null>(null);
-  const [markers, setMarkers] = useState<Inmueble[]>([]);
-  const [nearbyMarkers, setNearbyMarkers] = useState<Inmueble[]>([]);
+  const [selectedProperty, setSelectedProperty] = useState<InmuebleMap | null>(null);
+  const [markers, setMarkers] = useState<InmuebleMap[]>([]);
+  const [nearbyMarkers, setNearbyMarkers] = useState<InmuebleMap[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [searchType, setSearchType] = useState<'nombre' | 'direccion' | 'rfc'>('direccion');
-  const [resultProperties, setResultProperties] = useState<Inmueble[]>([]);
+  const [resultProperties, setResultProperties] = useState<InmuebleMap[]>([]);
   const [showResults, setShowResults] = useState(false); // Estado para controlar la visibilidad de resultados
   const [showDocumentoModal, setShowDocumentoModal] = useState(false);
   const [selectedInmuebleId, setSelectedInmuebleId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
-  
+  const [searchHistory, setSearchHistory] = useState<string[]>([]);
+
+  // Cargar todos los inmuebles al montar la página (estilo Airbnb)
+  useEffect(() => {
+    const cargarTodosLosInmuebles = async () => {
+      setLoading(true);
+      try {
+        // Traer todos los inmuebles registrados
+        const inmuebles: IInmueble[] = await buscarInmuebles({});
+        // Cargar información de cliente para cada inmueble y extraer lat/lon
+        const inmueblesConCliente: InmuebleMap[] = await Promise.all(
+          inmuebles.map(async (inmueble) => {
+            let lat = 0;
+            let lon = 0;
+            // Extraer lat/lon de ubicacionGeografica si existe
+            if ((inmueble as any).ubicacionGeografica && (inmueble as any).ubicacionGeografica.coordinates) {
+              lon = (inmueble as any).ubicacionGeografica.coordinates[0];
+              lat = (inmueble as any).ubicacionGeografica.coordinates[1];
+            } else if ((inmueble as any).lat && (inmueble as any).lon) {
+              lat = Number((inmueble as any).lat);
+              lon = Number((inmueble as any).lon);
+            }
+            // Cargar info de cliente si aplica
+            let nombreCliente = '';
+            let domicilioCliente = '';
+            if (inmueble.clienteId) {
+              try {
+                const cliente = await getClienteById(inmueble.clienteId);
+                if (cliente) {
+                  nombreCliente = cliente.nombre || cliente.razonSocial || '';
+                  domicilioCliente = cliente.direccion || '';
+                }
+              } catch {}
+            }
+            return {
+              ...inmueble,
+              lat,
+              lon,
+              nombreCliente,
+              domicilioCliente,
+              estatus: (inmueble as any).estatus || '',
+              image: (inmueble as any).foto || '',
+            };
+          })
+        );
+        // Filtrar solo los que tienen coordenadas válidas
+        const markersValidos = inmueblesConCliente.filter(m => !isNaN(m.lat) && !isNaN(m.lon) && m.lat && m.lon);
+        setMarkers(markersValidos);
+      } catch (error) {
+        console.error('Error al cargar los inmuebles para el mapa:', error);
+        setMarkers([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    cargarTodosLosInmuebles();
+  }, []); // Solo al montar la página
+
   // Efecto para manejar la visibilidad de resultados basado en resultProperties
   useEffect(() => {
     // Si hay resultados, mostrar el panel lateral después de un pequeño retraso para la animación
@@ -82,12 +131,11 @@ const Home: React.FC = () => {
     }
   }, [resultProperties]);
 
-  // Efecto para cargar detalles completos del inmueble cuando se selecciona un inmueble
   useEffect(() => {
     if (selectedProperty && selectedProperty.id) {
       const fetchFullInmuebleDetails = async () => {
         try {
-          const fullDetails = await getInmuebleById(selectedProperty.id);
+          const fullDetails = await getInmuebleById(selectedProperty.id!);
           setSelectedProperty(prev => ({
             ...prev,
             ...fullDetails
@@ -96,46 +144,260 @@ const Home: React.FC = () => {
           console.error('Error obteniendo detalles completos del inmueble:', error);
         }
       };
-      
+
       fetchFullInmuebleDetails();
     }
   }, [selectedProperty?.id]);
 
-  if (loadError) return <div>Error al cargar Google Maps</div>;
-  if (!isLoaded) return <div>Cargando mapa...</div>;
+  // Cargar historial de localStorage
+  useEffect(() => {
+    try {
+      const savedHistory = localStorage.getItem('searchHistory');
+      if (savedHistory) {
+        setSearchHistory(JSON.parse(savedHistory));
+      }
+    } catch (error) {
+      console.error('Error al cargar historial:', error);
+    }
+  }, []);
 
-  // Manejo del input de búsqueda: se consulta a buscarInmuebles (tu base de datos)
+  if (loadError) return <div>Error al cargar Google Maps</div>;
+  if (!isLoaded) return <div className="fixed inset-0 bg-black bg-opacity-20 flex items-center justify-center z-40">
+    <Loader />
+  </div>
+
+
+  const handleCloseDocumentoModal = async () => {
+    const id = selectedInmuebleId;
+    setShowDocumentoModal(false);
+    setSelectedInmuebleId(null);
+
+    if (!id) return;
+
+    try {
+      const updated = await getInmuebleById(id);
+
+      // Actualiza solo el inmueble correspondiente en los arrays
+      setResultProperties(prev =>
+        prev.map(p => p.id === updated.id ? { ...p, ...updated } : p)
+      );
+      setMarkers(prev =>
+        prev.map(m => m.id === updated.id ? { ...m, ...updated } : m)
+      );
+      if (selectedProperty?.id === updated.id) {
+        setSelectedProperty(updated);
+      }
+    } catch (error) {
+      console.error("Error recargando inmueble:", error);
+    }
+  };
+
+  const refreshInmueble = async () => {
+    if (!selectedInmuebleId) return;
+    const updated = await getInmuebleById(selectedInmuebleId);
+    // actualiza solo ese inmueble en resultProperties, markers y tarjeta
+    setResultProperties(prev =>
+      prev.map(p => p.id === updated.id ? { ...p, ...updated } : p)
+    );
+    setMarkers(prev =>
+      prev.map(m => m.id === updated.id ? { ...m, ...updated } : m)
+    );
+    if (selectedProperty?.id === updated.id) {
+      setSelectedProperty(updated);
+    }
+  };
+
+  // Función mejorada para obtener el texto de visualización específico por tipo de búsqueda
+  const getSuggestionDisplayText = (suggestion: any): string => {
+    switch (searchType) {
+      case 'nombre':
+        // Mejorada búsqueda por nombre con prioridades y formato más completo
+        // Usar el nombreCliente si está disponible directamente
+        if (suggestion.nombreCliente) return suggestion.nombreCliente;
+
+        // Construir nombre completo con componentes individuales si están disponibles
+        if (suggestion.nombre) {
+          // Construir nombre completo con todos los componentes disponibles
+          let nombreCompleto = suggestion.nombre;
+          if (suggestion.apellidoPaterno) nombreCompleto += ` ${suggestion.apellidoPaterno}`;
+          if (suggestion.apellidoMaterno) nombreCompleto += ` ${suggestion.apellidoMaterno}`;
+          return nombreCompleto;
+        }
+
+        // Caso para empresas o personas morales
+        if (suggestion.razonSocial) return `${suggestion.razonSocial} (Empresa)`;
+
+        // Si tenemos un campo nombreDisplay (que puede haber sido creado en handleInputChange)
+        if (suggestion.nombreDisplay) return suggestion.nombreDisplay;
+
+        // Si tiene clienteId pero no nombre, mostrar placeholder informativo
+        if (suggestion.clienteId) return `Cliente #${suggestion.clienteId}`;
+
+        // Último caso de respaldo, usar cualquier campo que pueda indicar un nombre
+        return suggestion.name || suggestion.cliente || suggestion.title ||
+          `Sugerencia #${suggestion.nombreCliente || ''}`;
+        break;
+      case 'rfc':
+        // Mejorada búsqueda por RFC con mejor formato y alternativas
+        if (suggestion.rfc) {
+          const rfc = suggestion.rfc.toUpperCase();
+          // Determinar si es persona física (13 caracteres) o moral (12 caracteres)
+          const tipoRfc = rfc.length === 13 ? "Persona Física" :
+            rfc.length === 12 ? "Persona Moral" : "";
+          return tipoRfc ? `${rfc} (${tipoRfc})` : rfc;
+        }
+        if (suggestion.clienteId) return `Cliente ID: ${suggestion.clienteId}`;
+        break;
+
+      case 'direccion':
+        // Para búsqueda por dirección, mostrar solo la dirección
+        if (suggestion.direccion) return suggestion.direccion;
+        if (suggestion.domicilio) return suggestion.domicilio;
+        // Construir dirección desde componentes si están disponibles
+        if (suggestion.calle) {
+          let direccionCompleta = suggestion.calle;
+          if (suggestion.numeroExterior) direccionCompleta += ` #${suggestion.numeroExterior}`;
+          if (suggestion.colonia) direccionCompleta += `, ${suggestion.colonia}`;
+          return direccionCompleta;
+        }
+        break;
+    }
+
+    // Si no hay un valor específico para el tipo, usar un valor de respaldo inteligente
+    return suggestion[searchType] || suggestion.id ? `ID #${suggestion.id}` : 'Sugerencia';
+  };
+
+  // Función para obtener información adicional para la sugerencia
+  const getSuggestionSecondaryInfo = (suggestion: any): string => {
+    switch (searchType) {
+      case 'nombre':
+        // Información secundaria más completa para nombres
+        const infoItems = [];
+
+        // Agregar RFC si existe
+        if (suggestion.rfc) infoItems.push(`RFC: ${suggestion.rfc.toUpperCase()}`);
+
+        // Agregar ID del cliente
+        if (suggestion.clienteId) infoItems.push(`ID: ${suggestion.clienteId}`);
+
+        // Agregar estatus si existe
+        if (suggestion.estatus) infoItems.push(`Estatus: ${suggestion.estatus}`);
+
+        // Agregar dirección abreviada
+        if (suggestion.direccion) {
+          // Limitar dirección a 40 caracteres para mantenerlo compacto
+          const direccionCorta = suggestion.direccion.length > 40
+            ? suggestion.direccion.substring(0, 40) + '...'
+            : suggestion.direccion;
+          infoItems.push(direccionCorta);
+        }
+
+        return infoItems.join(' | ');
+
+      case 'rfc':
+        // Información secundaria más detallada para RFC
+        const rfcInfoItems = [];
+
+        // Mostrar nombre completo o razón social
+        if (suggestion.nombreCliente) rfcInfoItems.push(suggestion.nombreCliente);
+        else if (suggestion.nombre) {
+          let nombreCompleto = suggestion.nombre;
+          if (suggestion.apellidoPaterno) nombreCompleto += ` ${suggestion.apellidoPaterno}`;
+          if (suggestion.apellidoMaterno) nombreCompleto += ` ${suggestion.apellidoMaterno}`;
+          rfcInfoItems.push(nombreCompleto);
+        }
+        else if (suggestion.razonSocial) rfcInfoItems.push(suggestion.razonSocial);
+
+        // Agregar tipo de persona si es conocido
+        if (suggestion.tipoPersona) {
+          rfcInfoItems.push(suggestion.tipoPersona === 'fisica' ? 'Persona Física' : 'Persona Moral');
+        }
+
+        // Agregar número de inmuebles si está disponible
+        if (suggestion.cantidadInmuebles) {
+          rfcInfoItems.push(`${suggestion.cantidadInmuebles} inmuebles`);
+        }
+
+        return rfcInfoItems.join(' | ');
+
+      case 'direccion':
+        // Información secundaria mejorada para direcciones
+        const direccionInfo = [];
+
+        // Mostrar cliente asociado
+        if (suggestion.nombreCliente) direccionInfo.push(suggestion.nombreCliente);
+        else if (suggestion.clienteId) direccionInfo.push(`Cliente ID: ${suggestion.clienteId}`);
+
+        // Mostrar valor de mercado si está disponible
+        if (suggestion.valorMercado) {
+          const valor = Number(suggestion.valorMercado);
+          if (!isNaN(valor)) {
+            direccionInfo.push(`$${valor.toLocaleString()}`);
+          }
+        }
+
+        // Mostrar estatus si existe
+        if (suggestion.estatus) direccionInfo.push(`Estatus: ${suggestion.estatus}`);
+
+        return direccionInfo.join(' | ');
+    }
+
+    return '';
+  };
+
+  const obtenerSugerenciasEspecificas = async (
+    tipo: 'nombre' | 'direccion' | 'rfc',
+    valor: string
+  ) => {
+    console.log('obtenerSugerenciasEspecificas - tipo:', tipo, 'valor:', valor);
+    if (valor.trim().length < 3) return [];
+    try {
+      let resultados: any[] = [];
+      switch (tipo) {
+        case 'nombre':
+          resultados = await buscarInmuebles({ nombre: valor });
+          // ...extra logic to refine by nombre...
+          break;
+        case 'rfc':
+          resultados = await buscarInmuebles({ rfc: valor.trim() });
+          // ...extra logic to refine by rfc...
+          break;
+        case 'direccion':
+          resultados = await buscarInmuebles({ direccion: valor });
+          // ...extra logic to refine by dirección...
+          break;
+      }
+      // ...sorting and duplicates removal...
+      console.log('Sugerencias obtenidas:', resultados);
+      return resultados;
+    } catch (err) {
+      console.error('Error:', err);
+      return [];
+    }
+  };
+
+  // Manejo del input de búsqueda con procesamiento mejorado
   const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
+    console.log('handleInputChange - valor ingresado:', value);
     setSearchTerm(value);
+
+    // Obtener coincidencias de la historia local (predictivo)
+    const localMatches = searchHistory.filter(item =>
+      item.toLowerCase().includes(value.toLowerCase())
+    );
+
     if (value.trim().length < 3) {
-      setSuggestions([]);
+      setSuggestions(localMatches.slice(0, 8)); // Sugerencias cortas con historial
       return;
     }
+
     try {
-      // Para todos los casos se consulta la base de datos
-      if (searchType === 'direccion') {
-        const params = { direccion: value };
-        const results = await buscarInmuebles(params);
-        setSuggestions(results);
-      } else if (searchType === 'rfc') {
-        const trimmedValue = value.trim();
-        if (trimmedValue.length >= 3) {
-          const params = { rfc: trimmedValue };
-          const results = await buscarInmuebles(params);
-          setSuggestions(results);
-        } else {
-          setSuggestions([]);
-        }
-      } else if (searchType === 'nombre') {
-        if (value.replace(/\s/g, '').length >= 3) {
-          // Uso apropiado del parámetro nombre sin necesidad de aserción de tipo
-          const results = await buscarInmuebles({ nombre: value });
-          setSuggestions(results);
-        } else {
-          setSuggestions([]);
-        }
-      }
+      const sugerencias = await obtenerSugerenciasEspecificas(searchType, value);
+      console.log('handleInputChange - sugerencias retornadas:', sugerencias);
+      // Combinar historial y sugerencias del servidor
+      const combined = [...new Set([...localMatches, ...sugerencias])];
+      setSuggestions(combined.slice(0, 8));
     } catch (error) {
       console.error('Error obteniendo sugerencias:', error);
       setSuggestions([]);
@@ -143,7 +405,8 @@ const Home: React.FC = () => {
   };
 
   const handleSuggestionSelect = (item: any) => {
-    const termino = item[searchType] || '';
+    // ...use specialized display logic...
+    const termino = getSuggestionDisplayText(item);
     setSearchTerm(termino);
     setSuggestions([]);
     handleSearch(termino);
@@ -155,6 +418,7 @@ const Home: React.FC = () => {
     }
   };
 
+
   // Función mejorada para validar coordenadas
   const isValidCoordinate = (coord: any): boolean => {
     // Primero verificamos si las coordenadas existen en ubicacionGeografica
@@ -163,19 +427,19 @@ const Home: React.FC = () => {
       const lon = Number(coord.ubicacionGeografica.lon);
       return !isNaN(lat) && !isNaN(lon) && isFinite(lat) && isFinite(lon);
     }
-    
+
     // Luego verificamos si las coordenadas están directamente en el objeto
     if (coord?.lat && coord?.lon) {
       const lat = Number(coord.lat);
       const lon = Number(coord.lon);
       return !isNaN(lat) && !isNaN(lon) && isFinite(lat) && isFinite(lon);
     }
-    
+
     return false;
   };
 
   // Función auxiliar para obtener coordenadas seguras
-  const getSafeCoordinates = (inmueble: Inmueble): { lat: number, lng: number } => {
+  const getSafeCoordinates = (inmueble: InmuebleMap): { lat: number, lng: number } => {
     try {
       // Primero intenta con ubicacionGeografica
       if (inmueble?.ubicacionGeografica?.lat && inmueble?.ubicacionGeografica?.lon) {
@@ -185,7 +449,7 @@ const Home: React.FC = () => {
           return { lat, lng: lon };
         }
       }
-      
+
       // Luego intenta con lat/lon directos
       if (inmueble?.lat && inmueble?.lon) {
         const lat = Number(inmueble.lat);
@@ -194,7 +458,7 @@ const Home: React.FC = () => {
           return { lat, lng: lon };
         }
       }
-      
+
       // Si no hay coordenadas válidas, retorna el centro predeterminado
       return center;
     } catch (error) {
@@ -204,7 +468,7 @@ const Home: React.FC = () => {
   };
 
   // Función para cargar información del cliente para un inmueble
-  const loadPropertyWithClientInfo = async (inmueble: Inmueble): Promise<Inmueble> => {
+  const loadPropertyWithClientInfo = async (inmueble: InmuebleMap): Promise<InmuebleMap> => {
     try {
       if (inmueble.clienteId) {
         const cliente = await getClienteById(inmueble.clienteId);
@@ -216,7 +480,7 @@ const Home: React.FC = () => {
           } else {
             nombreCliente = cliente.razonSocial || '';
           }
-          
+
           // Obtener el domicilio del cliente
           let domicilioCliente = '';
           if (cliente.direccion) {
@@ -225,7 +489,7 @@ const Home: React.FC = () => {
             // Construir domicilio a partir de componentes individuales
             domicilioCliente = `${cliente.calle || ''} ${cliente.numeroExterior || ''}, ${cliente.colonia || ''}, ${cliente.municipio || ''}, ${cliente.estado || ''}`;
           }
-          
+
           return { ...inmueble, nombreCliente, domicilioCliente };
         }
       }
@@ -240,14 +504,14 @@ const Home: React.FC = () => {
   const handleSearch = async (inputValue?: string) => {
     const term = inputValue || searchTerm;
     if (!term) return;
-    
+
     setLoading(true);
     try {
       // Limpiar resultados previos para iniciar la animación
       setResultProperties([]);
       setShowResults(false);
-      
-      let inmuebles: Inmueble[] = [];
+
+      let inmuebles: InmuebleMap[] = [];
       if (searchType === 'direccion') {
         // Obtiene el inmueble cuya dirección coincide EXACTAMENTE
         inmuebles = await buscarInmuebles({ direccion: term });
@@ -272,7 +536,7 @@ const Home: React.FC = () => {
           }
         }
       }
-      
+
       if (inmuebles.length > 0) {
         // Cargar información de cliente para todos los inmuebles
         const inmueblesConCliente = await Promise.all(
@@ -280,11 +544,11 @@ const Home: React.FC = () => {
             // Carga la información completa del inmueble y luego la del cliente
             try {
               // Para búsqueda por dirección, cargar detalles completos y el cliente
-              if (searchType === 'direccion' && inmuebles.length === 1) {
-                const fullDetails = await getInmuebleById(inmueble.id);
-                inmueble = { ...inmueble, ...fullDetails };
+              if (searchType === 'direccion' && inmuebles.length === 1 && inmueble.id != null) {
+                  const fullDetails = await getInmuebleById(inmueble.id!);
+                  inmueble = { ...inmueble, ...fullDetails };
               }
-              
+
               // Cargar información del cliente para el inmueble
               if (inmueble.clienteId) {
                 return await loadPropertyWithClientInfo(inmueble);
@@ -295,36 +559,43 @@ const Home: React.FC = () => {
             return inmueble;
           })
         );
-        
+
         setResultProperties(inmueblesConCliente);
-        
+
         const primerInmueble = inmueblesConCliente[0];
         if (isValidCoordinate(primerInmueble)) {
           // Obtener coordenadas de forma segura
           const safeCoords = getSafeCoordinates(primerInmueble);
           setMapCenter(safeCoords);
-          
+
           const markersValidos = inmueblesConCliente
             .filter(isValidCoordinate)
             .map(inmueble => {
               // Asegúrate de que lat y lon sean números válidos
               const lat = Number(inmueble.lat || inmueble.ubicacionGeografica?.lat || 0);
               const lon = Number(inmueble.lon || inmueble.ubicacionGeografica?.lon || 0);
-              
+
               if (isNaN(lat) || isNaN(lon) || !isFinite(lat) || !isFinite(lon)) {
                 console.warn(`Coordenadas inválidas para el inmueble ${inmueble.id}:`, { lat, lon });
                 return null; // Saltamos este marcador
               }
-              
+
               return {
                 ...inmueble,
                 lat,
                 lon
               };
             })
-            .filter(Boolean) as Inmueble[]; // Filtrar elementos null
-          
+            .filter(Boolean) as InmuebleMap[]; // Filtrar elementos null
+
           setMarkers(markersValidos);
+
+          // Guardar término en el historial
+          setSearchHistory(prev => {
+            const updatedHistory = [...new Set([term, ...prev])].slice(0, 15);
+            localStorage.setItem('searchHistory', JSON.stringify(updatedHistory));
+            return updatedHistory;
+          });
         } else {
           const geocoded = await geocodeAddress(primerInmueble.direccion);
           if (geocoded) {
@@ -365,7 +636,7 @@ const Home: React.FC = () => {
   };
 
   // Función para centrar el mapa en un inmueble específico
-  const handleVerEnMapa = async (inmueble: Inmueble) => {
+  const handleVerEnMapa = async (inmueble: InmuebleMap) => {
     try {
       // Si tiene coordenadas válidas, usarlas directamente
       if (isValidCoordinate(inmueble)) {
@@ -373,16 +644,16 @@ const Home: React.FC = () => {
         console.log('Coordenadas válidas:', safeCoords); // Para depurar
         setMapCenter(safeCoords);
         setSelectedProperty(inmueble);
-      } 
+      }
       // Si no tiene coordenadas, intentar geocodificar la dirección
       else if (inmueble.direccion) {
         setLoading(true);
         try {
           const geocoded = await geocodeAddress(inmueble.direccion);
-          
+
           if (geocoded && !isNaN(geocoded.lat) && !isNaN(geocoded.lon)) {
             console.log('Coordenadas geocodificadas:', geocoded); // Para depurar
-            
+
             // Actualizar el inmueble con las nuevas coordenadas
             const inmuebleActualizado = {
               ...inmueble,
@@ -391,16 +662,16 @@ const Home: React.FC = () => {
               // Si hay una dirección formateada, actualizarla también
               direccion: geocoded.formattedAddress || inmueble.direccion
             };
-            
+
             // Actualizar estado para el mapa
             setMapCenter({ lat: geocoded.lat, lng: geocoded.lon });
             setSelectedProperty(inmuebleActualizado);
-            
+
             // Actualizar el marcador en el mapa
             setMarkers(prevMarkers => {
               // Buscar si el marcador ya existe
               const markerExists = prevMarkers.some(m => m.id === inmueble.id);
-              
+
               if (markerExists) {
                 // Reemplazar el marcador existente
                 return prevMarkers.map(m => m.id === inmueble.id ? inmuebleActualizado : m);
@@ -409,7 +680,7 @@ const Home: React.FC = () => {
                 return [...prevMarkers, inmuebleActualizado];
               }
             });
-            
+
             // Si el inmueble está en resultProperties, actualizarlo allí también
             setResultProperties(prevProps => {
               return prevProps.map(p => p.id === inmueble.id ? inmuebleActualizado : p);
@@ -426,7 +697,7 @@ const Home: React.FC = () => {
       } else {
         alert('El inmueble no tiene dirección o coordenadas para mostrarlo en el mapa.');
       }
-      
+
       // Mover la vista del usuario al mapa (scroll suave)
       const mapElement = document.getElementById('map-container');
       if (mapElement) {
@@ -439,14 +710,98 @@ const Home: React.FC = () => {
     }
   };
 
-  const handleMarkerClick = (marker: Inmueble) => {
+  // Al hacer click en un drop, mostrar la card del inmueble (handleMarkerClick)
+  const handleMarkerClick = async (marker: InmuebleMap) => {
     setSelectedProperty(marker);
+    setResultProperties([marker]); // Mostrar la card del inmueble seleccionado
+    setShowResults(true);
+    // Centrar el mapa en el marcador seleccionado
+    if (isValidCoordinate(marker)) {
+      const safeCoords = getSafeCoordinates(marker);
+      setMapCenter(safeCoords);
+    }
+    // Opcional: mostrar inmuebles cercanos si lo deseas
     const radius = 1000; // Radio en metros
     const nearby = markers.filter(m =>
       m.id !== marker.id &&
       haversineDistance(Number(m.lat), Number(m.lon), Number(marker.lat), Number(marker.lon)) < radius
     );
     setNearbyMarkers(nearby);
+  };
+
+  // Función para crear un marcador personalizado en forma de gota
+  const createDropletMarker = (estatus: string | undefined, text: string): google.maps.Symbol => {
+    // Determinar color según el estatus
+    let backgroundColor = 'rgba(52, 152, 219, 0.9)'; // Default - azul
+    let borderColor = '#3498db';
+    let textColor = '#00000'; // Blanco
+
+    switch (estatus?.toLowerCase()) {
+      case 'aceptado':
+        backgroundColor = 'rgba(39, 174, 96, 0.9)'; // Verde
+        borderColor = '#2ecc71';
+        break;
+      case 'rechazado':
+        backgroundColor = 'rgba(231, 76, 60, 0.9)'; // Rojo
+        borderColor = '#e74c3c';
+        break;
+      case 'pendiente':
+        backgroundColor = 'rgba(241, 196, 15, 0.9)'; // Amarillo
+        borderColor = '#f1c40f';
+        textColor = '#333333';
+        break;
+    }
+
+    // Crear el SVG para el marcador en forma de gota
+    const svgMarker: google.maps.Symbol = {
+      path: 'M12 0C5.4 0 0 5.4 0 12c0 6.6 12 24 12 24s12-17.4 12-24C24 5.4 18.6 0 12 0z',
+      fillColor: backgroundColor,
+      fillOpacity: 1,
+      strokeColor: borderColor,
+      strokeWeight: 2,
+      scale: 1.2,
+      anchor: new google.maps.Point(12, 24),
+      labelOrigin: new google.maps.Point(12, -6)
+    };
+
+    return svgMarker;
+  };
+
+  // Función para formatear el texto del marcador de forma personalizada
+  const formatMarkerLabel = (marker: InmuebleMap): string => {
+    let label = '';
+
+    // Agregar ID del inmueble si está disponible
+    if (marker.id) {
+      label += `#${marker.id}: `;
+    }
+
+    // Agregar valor de mercado con formato de moneda
+    if (marker.valorMercado) {
+      const valor = Number(marker.valorMercado);
+
+      // Si el valor es mayor a un millón, mostrar en millones
+      if (valor >= 1000000) {
+        label += `$${(valor / 1000000).toFixed(1)}M`;
+      } else if (valor >= 1000) {
+        // Si es mayor a mil, mostrar en miles
+        label += `$${(valor / 1000).toFixed(0)}K`;
+      } else {
+        label += `$${valor.toLocaleString()}`;
+      }
+    }
+
+    // Si hay información del cliente, agregarla como segunda línea
+    if (marker.nombreCliente) {
+      // Acortar el nombre si es muy largo
+      const nombreCorto = marker.nombreCliente.length > 20
+        ? marker.nombreCliente.substring(0, 18) + '...'
+        : marker.nombreCliente;
+
+      label = label ? `${label}\n${nombreCorto}` : nombreCorto;
+    }
+
+    return label || 'Inmueble';
   };
 
   // Función para generar un fallback de imagen si la original no carga
@@ -457,7 +812,7 @@ const Home: React.FC = () => {
   // Función para determinar el color del estatus basado en su valor
   const getStatusColor = (status: string | undefined): string => {
     if (!status) return 'text-gray-500'; // Por defecto si no hay estatus
-    
+
     switch (status.toLowerCase()) {
       case 'pendiente':
         return 'text-gray-500';
@@ -477,29 +832,56 @@ const Home: React.FC = () => {
         <div className="relative w-full sm:w-80">
           <input
             type="text"
-            placeholder={`Buscar por ${searchType}...`}
+            placeholder={`Buscar por ${searchType === 'nombre'
+              ? 'nombre de cliente'
+              : searchType === 'rfc'
+                ? 'RFC'
+                : 'dirección de inmueble'
+              }...`}
             className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-1 focus:ring-red-500 text-sm"
             value={searchTerm}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
+            onFocus={() => setSuggestions([])} // Limpiar sugerencias al enfocar el input
+            autoComplete="off"
           />
           {suggestions.length > 0 && (
-            <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 shadow-lg rounded w-full z-50">
-              {suggestions.map((sug, index) => (
-                <div
-                  key={index}
-                  className="p-3 hover:bg-gray-100 hover:font-semibold cursor-pointer transition duration-150 ease-in-out"
-                  onClick={() => handleSuggestionSelect(sug)}
-                >
-                  {sug[searchType] || 'Sugerencia'}
-                </div>
-              ))}
+            <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 shadow-lg rounded w-full z-50 max-h-60 overflow-y-auto">
+              {suggestions.map((sug, index) => {
+                const mainText = getSuggestionDisplayText(sug);
+                const secondaryText = getSuggestionSecondaryInfo(sug);
+
+                return (
+                  <div
+                    key={index}
+                    className="p-3 hover:bg-gray-100 hover:font-semibold cursor-pointer transition duration-150 ease-in-out border-b border-gray-100 last:border-b-0"
+                    onClick={() => handleSuggestionSelect(sug)}
+                  >
+                    <div className="flex items-center">
+                      {/* Iconos específicos por tipo de búsqueda */}
+                      {searchType === 'nombre' && <FaUser className="mr-2 text-gray-600" size={14} />}
+                      {searchType === 'rfc' && <FaFileAlt className="mr-2 text-gray-600" size={14} />}
+                      {searchType === 'direccion' && <FaMapPin className="mr-2 text-gray-600" size={14} />}
+
+                      <div>
+                        {/* Texto principal de la sugerencia */}
+                        <div className="text-gray-800 font-medium">{mainText}</div>
+
+                        {/* Información secundaria (si existe) */}
+                        {secondaryText && (
+                          <div className="text-gray-500 text-xs mt-1">{secondaryText}</div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
-        <button 
-          onClick={() => handleSearch()} 
-          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition focus:outline-none flex items-center gap-1"
+        <button
+          onClick={() => handleSearch()}
+          className="px-4 py-2 bg-red-700 text-white rounded-lg hover:bg-red-500 transition focus:outline-none flex items-center gap-1"
         >
           <FaSearch className="text-white" />
           Buscar
@@ -517,9 +899,7 @@ const Home: React.FC = () => {
 
       {loading && (
         <div className="fixed inset-0 bg-black bg-opacity-20 flex items-center justify-center z-40">
-          <div className="bg-white p-4 rounded-lg shadow-lg animate-pulse">
-            <p className="text-lg font-semibold">Buscando inmuebles...</p>
-          </div>
+          <Loader />
         </div>
       )}
 
@@ -528,7 +908,7 @@ const Home: React.FC = () => {
         /* Layout con card lateral para búsqueda por dirección */
         <div className="flex flex-col lg:flex-row gap-4">
           {/* Mapa a la izquierda */}
-          <div 
+          <div
             id="map-container"
             className="w-full lg:w-2/3 transition-all duration-500 ease-in-out"
           >
@@ -545,34 +925,33 @@ const Home: React.FC = () => {
               }}
             >
               {markers
-                .filter(marker => 
-                  !isNaN(Number(marker.lat)) && 
+                .filter(marker =>
+                  !isNaN(Number(marker.lat)) &&
                   !isNaN(Number(marker.lon)) &&
-                  isFinite(Number(marker.lat)) && 
+                  isFinite(Number(marker.lat)) &&
                   isFinite(Number(marker.lon))
                 )
                 .map((marker, index) => (
                   <Marker
                     key={index}
-                    position={{ 
-                      lat: Number(marker.lat), 
-                      lng: Number(marker.lon) 
+                    position={{
+                      lat: Number(marker.lat),
+                      lng: Number(marker.lon)
                     }}
                     onClick={() => handleMarkerClick(marker)}
                     animation={google.maps.Animation.DROP}
+                    icon={createDropletMarker(
+                      marker.estatus,
+                      formatMarkerLabel(marker)
+                    )}
                     label={{
-                      text: `${marker.nombreCliente ? marker.nombreCliente + ': ' : ''}$${Number(marker.valorMercado).toLocaleString()}`,
-                      color: 'black',
-                      fontSize: '11px',
-                      fontWeight: 'bold',
+                      text: formatMarkerLabel(marker),
+                      className: `
+                        custom-marker-label
+                        ${marker.estatus ? 'label-' + marker.estatus.toLowerCase() : 'label-default'}
+                        ${marker.id === selectedProperty?.id ? 'marker-selected' : ''}
+                      `
                     }}
-                    icon={
-                      selectedProperty && marker.id === selectedProperty.id
-                        ? "http://maps.google.com/mapfiles/ms/icons/green-dot.png"
-                        : nearbyMarkers.some(n => n.id === marker.id)
-                        ? "http://maps.google.com/mapfiles/ms/icons/yellow-dot.png"
-                        : undefined
-                    }
                   />
                 ))
               }
@@ -584,8 +963,18 @@ const Home: React.FC = () => {
             <div className="bg-white shadow-lg rounded-lg overflow-hidden h-full">
               {/* Cabecera con imagen */}
               <div className="relative">
-                <img 
-                  src={resultProperties[0].image || resultProperties[0].foto || "https://via.placeholder.com/800x400?text=Sin+Imagen"} 
+                <img
+                  src={
+                    typeof resultProperties[0].image === 'string'
+                      ? resultProperties[0].image
+                      : resultProperties[0].image instanceof File
+                        ? URL.createObjectURL(resultProperties[0].image)
+                        : typeof resultProperties[0].foto === 'string'
+                          ? resultProperties[0].foto
+                          : resultProperties[0].foto instanceof File
+                            ? URL.createObjectURL(resultProperties[0].foto)
+                            : "https://via.placeholder.com/800x400?text=Sin+Imagen"
+                  }
                   alt={`Inmueble en ${resultProperties[0].direccion}`}
                   className="w-full h-48 object-cover object-center"
                   onError={handleImageError}
@@ -601,7 +990,7 @@ const Home: React.FC = () => {
                   </div>
                 )}
               </div>
-              
+
               {/* Contenido */}
               <div className="p-6">
                 {/* Nombre del cliente */}
@@ -633,7 +1022,7 @@ const Home: React.FC = () => {
                     <p className="text-gray-600">{resultProperties[0].direccion}</p>
                   </div>
                 </div>
-                
+
                 <div className="mb-4 flex items-start gap-2">
                   <FaMoneyBillWave className="mt-1 text-gray-500 flex-shrink-0" />
                   <div>
@@ -651,10 +1040,10 @@ const Home: React.FC = () => {
                     </div>
                   </div>
                 )}
-                
+
                 <div className="mt-6 flex justify-end">
                   <button
-                    onClick={() => handleVerExpediente(resultProperties[0].id)}
+                    onClick={() => handleVerExpediente(resultProperties[0].id!)}
                     className="px-5 py-2.5 bg-red-600 text-white rounded-md hover:bg-red-700 transition-all transform hover:scale-105 shadow-md flex items-center gap-2"
                   >
                     <FaFileAlt /> Ver Expediente
@@ -668,7 +1057,7 @@ const Home: React.FC = () => {
         /* Layout original para búsqueda por nombre/RFC o cuando no hay resultados */
         <div className="flex flex-col gap-4">
           {/* Mapa - Se ajusta automáticamente según hay resultados */}
-          <div 
+          <div
             id="map-container"
             className="w-full transition-all duration-500 ease-in-out"
           >
@@ -685,38 +1074,32 @@ const Home: React.FC = () => {
               }}
             >
               {markers
-                .filter(marker => 
-                  !isNaN(Number(marker.lat)) && 
+                .filter(marker =>
+                  !isNaN(Number(marker.lat)) &&
                   !isNaN(Number(marker.lon)) &&
-                  isFinite(Number(marker.lat)) && 
+                  isFinite(Number(marker.lat)) &&
                   isFinite(Number(marker.lon))
                 )
                 .map((marker, index) => (
                   <Marker
                     key={index}
-                    position={{ 
-                      lat: Number(marker.lat), 
-                      lng: Number(marker.lon) 
+                    position={{
+                      lat: Number(marker.lat),
+                      lng: Number(marker.lon)
                     }}
                     onClick={() => handleMarkerClick(marker)}
                     animation={google.maps.Animation.DROP}
+                    icon={createDropletMarker(
+                      marker.estatus,
+                      formatMarkerLabel(marker)
+                    )}
                     label={{
-  text: `${marker.nombreCliente ? marker.nombreCliente + ': ' : ''}$${Number(marker.valorMercado).toLocaleString()}`,
-  color: '#FF4500', // Color personalizado
-  fontSize: '14px', // Tamaño más pequeño
-  fontWeight: 'bold',
-  className: 'marker-label', // Añadir una clase CSS personalizada
-}}
-                    icon={{
-                        url: marker.estatus === 'aceptado' 
-                          ? '/imagenes/marcador-verde.png'
-                          : marker.estatus === 'rechazado'
-                          ? '/imagenes/marcador-rojo.png'
-                          : '/imagenes/marcador-default.png',
-                        scaledSize: new window.google.maps.Size(40, 40), // Tamaño personalizado
-                        origin: new window.google.maps.Point(0, 0),
-                        anchor: new window.google.maps.Point(20, 40), // Ajusta el punto de anclaje
-                      }}
+                      text: formatMarkerLabel(marker),
+                      color: 'white',
+                      fontWeight: 'bold',
+                      fontSize: '12px',
+                      className: `custom-marker-label ${marker.estatus ? 'label-' + marker.estatus.toLowerCase() : 'label-default'} ${marker.id === selectedProperty?.id ? 'marker-selected' : ''}`
+                    }}
                   />
                 ))
               }
@@ -733,8 +1116,18 @@ const Home: React.FC = () => {
                     <div key={inmueble.id} className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
                       {/* Imagen del inmueble */}
                       <div className="relative h-40">
-                        <img 
-                          src={inmueble.image || inmueble.foto || "https://via.placeholder.com/400x200?text=Sin+Imagen"} 
+                        <img
+                          src={
+                            typeof inmueble.image === "string"
+                              ? inmueble.image
+                              : inmueble.image instanceof File
+                                ? URL.createObjectURL(inmueble.image)
+                                : typeof inmueble.foto === "string"
+                                  ? inmueble.foto
+                                  : inmueble.foto instanceof File
+                                    ? URL.createObjectURL(inmueble.foto)
+                                    : "https://via.placeholder.com/400x200?text=Sin+Imagen"
+                          }
                           alt={`Inmueble en ${inmueble.direccion}`}
                           className="w-full h-full object-cover"
                           onError={handleImageError}
@@ -749,7 +1142,7 @@ const Home: React.FC = () => {
                           </div>
                         )}
                       </div>
-                      
+
                       {/* Datos del inmueble */}
                       <div className="p-4">
                         {/* Nombre del cliente */}
@@ -761,7 +1154,7 @@ const Home: React.FC = () => {
                             </p>
                           </div>
                         )}
-                        
+
                         {/* Domicilio del cliente */}
                         {inmueble.domicilioCliente && (
                           <div className="flex items-center gap-1 mb-2">
@@ -771,15 +1164,15 @@ const Home: React.FC = () => {
                             </p>
                           </div>
                         )}
-                        
+
                         <h4 className="font-semibold text-gray-700 text-lg mb-2 line-clamp-1" title={inmueble.direccion}>
                           {inmueble.direccion}
                         </h4>
-                        
+
                         <p className="text-gray-700 mb-3 font-semibold">
                           ${Number(inmueble.valorMercado).toLocaleString()}
                         </p>
-                        
+
                         <div className="flex flex-col sm:flex-row gap-2 mt-4">
                           <button
                             onClick={() => handleVerEnMapa(inmueble)}
@@ -788,7 +1181,7 @@ const Home: React.FC = () => {
                             <FaMapMarkerAlt /> Mapa
                           </button>
                           <button
-                            onClick={() => handleVerExpediente(inmueble.id)}
+                            onClick={() => handleVerExpediente(inmueble.id!)}
                             className="flex-1 px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors flex items-center justify-center gap-1"
                           >
                             <FaFileAlt /> Expediente
@@ -808,7 +1201,8 @@ const Home: React.FC = () => {
       {showDocumentoModal && selectedInmuebleId && (
         <DocumentoManager
           inmuebleId={selectedInmuebleId}
-          onClose={() => setShowDocumentoModal(false)}
+          onClose={handleCloseDocumentoModal}
+          onStatusUpdate={refreshInmueble}   // ya existe, ahora encaja con la interfaz
         />
       )}
     </div>

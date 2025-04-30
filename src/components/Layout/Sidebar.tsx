@@ -18,6 +18,8 @@ const Sidebar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const tipoUsuario = localStorage.getItem('tipo_usuario');
+
   const menuItems = [
     {
       key: '/',
@@ -36,18 +38,23 @@ const Sidebar: React.FC = () => {
       onClick: () => navigate('/clientes'),
       className: 'hover:bg-red-800',
     },
-    {
+    // Solo mostrar Usuarios si es administrador
+    ...(tipoUsuario === 'administrador' ? [{
       key: '/usuarios',
       icon: <UserOutlined />,
       label: 'Usuarios',
       onClick: () => navigate('/usuarios'),
       className: 'hover:bg-red-800',
-    },
+    }] : []),
     {
       key: '/logout',
       icon: <DisconnectOutlined />,
       label: 'Cerrar Sesión',
-      // onClick: () => navigate('/logout'), // Ejemplo si quisieras cerrar sesión
+      onClick: () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('tipo_usuario');
+        window.location.href = '/login';
+      },
       className: 'hover:bg-red-800',
     },
   ];
