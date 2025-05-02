@@ -1000,6 +1000,9 @@ const Home: React.FC = () => {
                     <div>
                       <h4 className="font-semibold text-gray-700 mb-1">Cliente</h4>
                       <p className="text-gray-600">{resultProperties[0].nombreCliente}</p>
+                      {resultProperties[0].tipoPersona && (
+                        <p className="text-gray-500 text-sm">{resultProperties[0].tipoPersona === 'fisica' ? 'Persona Física' : 'Persona Moral'}</p>
+                      )}
                     </div>
                   </div>
                 )}
@@ -1027,7 +1030,7 @@ const Home: React.FC = () => {
                   <FaMoneyBillWave className="mt-1 text-gray-500 flex-shrink-0" />
                   <div>
                     <h4 className="font-semibold text-gray-700 mb-1">Valor de Mercado</h4>
-                    <p className="text-gray-600 text-xl">${Number(resultProperties[0].valorMercado).toLocaleString()}</p>
+                    <p className="text-gray-600 text-xl">${Number(resultProperties[0].valorMercado).toLocaleString()} MXN</p>
                   </div>
                 </div>
 
