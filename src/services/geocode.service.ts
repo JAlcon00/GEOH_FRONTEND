@@ -1,4 +1,3 @@
-import { buscarInmuebles } from './search.service';
 import axios from 'axios';
 
 export interface GeocodingResult {

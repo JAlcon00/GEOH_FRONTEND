@@ -540,7 +540,7 @@ const ClienteManager: React.FC = memo(() => {
                         >
                             &times;
                         </button>
-                        <DetalleCliente rfc={detalleClienteRFC} onClose={closeDetalleCliente} />
+                        <DetalleCliente rfc={detalleClienteRFC} />
                     </div>
                 </div>
             )}

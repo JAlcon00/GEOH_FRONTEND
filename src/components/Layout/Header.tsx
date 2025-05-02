@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLayout } from '../../contexts/LayoutContext';
-import { PlusOutlined, DashboardOutlined, CloseOutlined } from '@ant-design/icons';
+import { PlusOutlined, CloseOutlined } from '@ant-design/icons';
 import ClienteForm from '../cliente/clienteForm';
-import logo from '../../img/LogoFull.png';
 import { getProfile } from '../../services/auth.service';
 
 const Header: React.FC = () => {

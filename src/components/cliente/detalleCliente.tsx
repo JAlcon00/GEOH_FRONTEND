@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { useLayout } from '../../contexts/LayoutContext';
 import { getClienteByRFC } from '../../services/cliente.service';
 
 interface Cliente {
@@ -21,8 +20,7 @@ interface Cliente {
     pais?: string;
 }
 
-const DetalleCliente: React.FC<{ rfc: string; onClose: () => void }> = ({ rfc, onClose }) => {
-    const { collapsed } = useLayout();
+const DetalleCliente: React.FC<{ rfc: string }> = ({ rfc }) => {
     const [cliente, setCliente] = useState<Cliente | null>(null);
 
     useEffect(() => {

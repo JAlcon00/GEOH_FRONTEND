@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
-import { Modal, Button } from '@material-ui/core';
+import { Modal } from '@material-ui/core';
 import { FaSearch } from 'react-icons/fa';
 import { IPersonaFisica, IPersonaMoral, ICliente, IClienteConTipo } from '../../types/cliente.types';
 import PlacesAutocomplete, { geocodeByAddress } from 'react-places-autocomplete';
@@ -158,8 +158,7 @@ const MemoizedAddressInput = memo<AddressInputProps>(({
 
 // Componente principal optimizado
 const ClienteForm = memo(() => {
-    // Eliminar estado no utilizado: showModal
-    const { collapsed } = useLayout();
+    useLayout();
     const [isNewClient, setIsNewClient] = useState<boolean | null>(null);
     const [rfc, setRFC] = useState<string>('');
     const [cliente, setCliente] = useState<ICliente | null>(null);

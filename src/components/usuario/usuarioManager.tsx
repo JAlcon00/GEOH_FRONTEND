@@ -59,10 +59,6 @@ const UsuarioManager: React.FC = () => {
     console.log('Ver usuario', id);
   };
 
-  const handleEditar = (id: number) => {
-    console.log('Editar usuario', id);
-  };
-
   const openAddModal = () => {
     setEditUser(null);
     setForm({ nombre: '', apellido: '', contrasena: '', tipo_usuario: 'usuario' });

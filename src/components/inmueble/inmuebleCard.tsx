@@ -9,7 +9,7 @@ interface Inmueble {
     estatus: string;
 }
 
-const InmuebleCard: React.FC<Inmueble> = ({ id, direccion, valorMercado, foto, estatus }) => {
+const InmuebleCard: React.FC<Omit<Inmueble, 'foto'>> = ({ id, direccion, valorMercado, estatus }) => {
     const [showDocumentoModal, setShowDocumentoModal] = useState(false);
 
     return (

@@ -51,12 +51,12 @@ const Home: React.FC = () => {
   const [mapCenter, setMapCenter] = useState(center);
   const [selectedProperty, setSelectedProperty] = useState<InmuebleMap | null>(null);
   const [markers, setMarkers] = useState<InmuebleMap[]>([]);
-  const [nearbyMarkers, setNearbyMarkers] = useState<InmuebleMap[]>([]);
+  const [/* nearbyMarkers */, setNearbyMarkers] = useState<InmuebleMap[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [searchType, setSearchType] = useState<'nombre' | 'direccion' | 'rfc'>('direccion');
   const [resultProperties, setResultProperties] = useState<InmuebleMap[]>([]);
-  const [showResults, setShowResults] = useState(false); // Estado para controlar la visibilidad de resultados
+  const [/* showResults */, setShowResults] = useState(false); // Estado para controlar la visibilidad de resultados
   const [showDocumentoModal, setShowDocumentoModal] = useState(false);
   const [selectedInmuebleId, setSelectedInmuebleId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
@@ -730,11 +730,10 @@ const Home: React.FC = () => {
   };
 
   // Función para crear un marcador personalizado en forma de gota
-  const createDropletMarker = (estatus: string | undefined, text: string): google.maps.Symbol => {
+  const createDropletMarker = (estatus: string | undefined): google.maps.Symbol => {
     // Determinar color según el estatus
     let backgroundColor = 'rgba(52, 152, 219, 0.9)'; // Default - azul
     let borderColor = '#3498db';
-    let textColor = '#00000'; // Blanco
 
     switch (estatus?.toLowerCase()) {
       case 'aceptado':
@@ -748,7 +747,6 @@ const Home: React.FC = () => {
       case 'pendiente':
         backgroundColor = 'rgba(241, 196, 15, 0.9)'; // Amarillo
         borderColor = '#f1c40f';
-        textColor = '#333333';
         break;
     }
 
@@ -941,8 +939,7 @@ const Home: React.FC = () => {
                     onClick={() => handleMarkerClick(marker)}
                     animation={google.maps.Animation.DROP}
                     icon={createDropletMarker(
-                      marker.estatus,
-                      formatMarkerLabel(marker)
+                      marker.estatus
                     )}
                     label={{
                       text: formatMarkerLabel(marker),
@@ -1000,9 +997,7 @@ const Home: React.FC = () => {
                     <div>
                       <h4 className="font-semibold text-gray-700 mb-1">Cliente</h4>
                       <p className="text-gray-600">{resultProperties[0].nombreCliente}</p>
-                      {resultProperties[0].tipoPersona && (
-                        <p className="text-gray-500 text-sm">{resultProperties[0].tipoPersona === 'fisica' ? 'Persona Física' : 'Persona Moral'}</p>
-                      )}
+                      
                     </div>
                   </div>
                 )}
@@ -1093,8 +1088,7 @@ const Home: React.FC = () => {
                     onClick={() => handleMarkerClick(marker)}
                     animation={google.maps.Animation.DROP}
                     icon={createDropletMarker(
-                      marker.estatus,
-                      formatMarkerLabel(marker)
+                      marker.estatus
                     )}
                     label={{
                       text: formatMarkerLabel(marker),
