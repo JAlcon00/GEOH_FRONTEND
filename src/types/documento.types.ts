@@ -7,3 +7,15 @@ export interface IDocumento {
     inmuebleId?: number;
     estatus?: string;
 }
+
+declare global {
+  interface Window {
+    toast?: {
+      success: (msg: string) => void;
+      warning: (msg: string) => void;
+      error: (msg: string) => void;
+    };
+  }
+}
+
+export {};

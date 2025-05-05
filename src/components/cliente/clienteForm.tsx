@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { Modal } from '@material-ui/core';
-import { FaSearch } from 'react-icons/fa';
 import { IPersonaFisica, IPersonaMoral, ICliente, IClienteConTipo } from '../../types/cliente.types';
-import PlacesAutocomplete, { geocodeByAddress } from 'react-places-autocomplete';
 import { loadGoogleMaps } from '../../services/geocode.service';
 import { IInmueble } from '../../types/inmueble.types';
 import { TipoDocumento } from '../../types/documento.types';
@@ -11,150 +9,11 @@ import DocumentoService from '../../services/documento.service';
 import { createInmueble } from '../../services/inmueble.service';
 import { useLayout } from '../../contexts/LayoutContext';
 import './clienteForm.css';
-import Dropzone, { Accept } from 'react-dropzone';
 
-// Función auxiliar para convertir string de tipos a objeto Accept
-const convertAcceptTypesToObject = (acceptTypesString: string): Accept => {
-    if (acceptTypesString === 'image/*') {
-        return {
-            'image/*': ['.jpg', '.jpeg', '.png', '.gif', '.webp']
-        };
-    }
-
-    if (acceptTypesString === '.pdf,.doc,.docx') {
-        return {
-            'application/pdf': ['.pdf'],
-            'application/msword': ['.doc'],
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx']
-        };
-    }
-
-    // Para otros casos, convertir genéricamente
-    const extensions = acceptTypesString.split(',');
-    const result: Accept = {};
-
-    extensions.forEach(ext => {
-        const cleanExt = ext.trim();
-        // Mapear extensiones a tipos MIME aproximados
-        if (cleanExt.startsWith('.')) {
-            result[`application/${cleanExt.substring(1)}`] = [cleanExt];
-        } else {
-            result[cleanExt] = [];
-        }
-    });
-
-    return result;
-};
-
-// Interfaz para las props del componente dropzone
-interface DocumentoDropzoneProps {
-    label: string;
-    documento: File | null;
-    onDrop: (file: File) => void;
-    onRemove: () => void;
-    acceptTypes: string;
-}
-
-// Componente memoizado para dropzone
-const MemoizedDocumentoDropzone = memo<DocumentoDropzoneProps>(({
-    label,
-    documento,
-    onDrop,
-    onRemove,
-    acceptTypes
-}) => {
-    const handleDrop = useCallback((acceptedFiles: File[]) => {
-        if (acceptedFiles && acceptedFiles.length > 0) {
-            onDrop(acceptedFiles[0]);
-        }
-    }, [onDrop]);
-
-    return (
-        <div className="documento-input col-span-1">
-            <label>{label}</label>
-            <Dropzone onDrop={handleDrop} accept={convertAcceptTypesToObject(acceptTypes)}>
-                {({ getRootProps, getInputProps }) => (
-                    <div {...getRootProps()} className="dropzone p-4 border-dashed border-2 border-gray-300 rounded-md text-center cursor-pointer">
-                        <input {...getInputProps()} />
-                        {documento ? (
-                            <>
-                                <p className="text-gray-700">Archivo seleccionado: {documento.name}</p>
-                                <button
-                                    type="button"
-                                    className="btn-primary bg-red-500 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 transition duration-300 ease-in-out transform hover:scale-105 mt-2"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onRemove();
-                                    }}>
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                                    </svg>
-                                </button>
-                            </>
-                        ) : (
-                            <>
-                                <p className="text-gray-500">Arrastra y suelta un archivo aquí, o haz clic para seleccionar uno</p>
-                                <button type="button" className="btn-primary bg-green-500 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition duration-300 ease-in-out transform hover:scale-105">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
-                                    </svg>
-                                </button>
-                            </>
-                        )}
-                    </div>
-                )}
-            </Dropzone>
-        </div>
-    );
-});
-
-// Componente memoizado para la sección de dirección con autocompletado
-interface AddressInputProps {
-    value: string;
-    onChange: (value: string) => void;
-    onSelect: (value: string) => void;
-    placeholder?: string;
-}
-
-const MemoizedAddressInput = memo<AddressInputProps>(({
-    value,
-    onChange,
-    onSelect,
-    placeholder
-}) => {
-    return (
-        <div className='input-primary col-span-2 relative mb-8'>
-            <PlacesAutocomplete
-                value={value}
-                onChange={onChange}
-                onSelect={onSelect}
-            >
-                {({ getInputProps, suggestions, getSuggestionItemProps }) => (
-                    <div className="autocomplete-root">
-                        <input
-                            {...getInputProps({
-                                placeholder: placeholder || 'Busca dirección...',
-                                className: 'col-span-2 pr-10',
-                            })}
-                        />
-                        <FaSearch className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-600" />
-                        <div className="autocomplete-dropdown">
-                            {suggestions.map((sug) => (
-                                <div
-                                    {...getSuggestionItemProps(sug)}
-                                    key={sug.placeId}
-                                    className="p-3 cursor-pointer hover:bg-gray-100 border-b last:border-none"
-                                >
-                                    {sug.description}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-            </PlacesAutocomplete>
-        </div>
-    );
-});
+// Importar componentes modularizados
+import ClienteFormComponent from './clienteForm/cliente';
+import InmuebleForm from './clienteForm/inmueble';
+import DocumentosForm from './clienteForm/documentos';
 
 // Componente principal optimizado
 const ClienteForm = memo(() => {
@@ -178,6 +37,9 @@ const ClienteForm = memo(() => {
     const [tipoPersona, setTipoPersona] = useState<'fisica' | 'moral' | ''>('');
     const [openModal, setOpenModal] = useState(false);
     const [address, setAddress] = useState<string>('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const [rfcWarning, setRfcWarning] = useState('');
 
     // Efecto optimizado para cargar Google Maps API una sola vez
     useEffect(() => {
@@ -229,7 +91,6 @@ const ClienteForm = memo(() => {
     }, []);
 
     const handleSelect = useCallback(async (value: string, field: 'cliente' | 'inmueble') => {
-        await geocodeByAddress(value);
         if (field === 'cliente') {
             setCliente(cliente => cliente ? { ...cliente, domicilio: value } : null);
         } else {
@@ -238,69 +99,96 @@ const ClienteForm = memo(() => {
         }
     }, []);
 
+    // Validación de RFC según tipo de persona
+    const validarLongitudRFC = useCallback(() => {
+        if (tipoPersona === 'fisica' && rfc.length !== 13) {
+            alert('El RFC de persona física debe tener exactamente 13 caracteres.');
+            return false;
+        }
+        if (tipoPersona === 'moral' && rfc.length !== 12) {
+            alert('El RFC de persona moral debe tener exactamente 12 caracteres.');
+            return false;
+        }
+        return true;
+    }, [rfc, tipoPersona]);
+
     const handleRFCSubmit = useCallback(async () => {
+        if (!rfc || rfc.trim() === '') {
+            alert('Por favor, ingrese un RFC antes de buscar.');
+            return;
+        }
+        if (!validarLongitudRFC()) return;
         try {
             console.log('Buscando cliente con RFC:', rfc);
             const clienteData = await getClienteByRFC(rfc);
             setCliente(clienteData);
             console.log(`Se encontró el RFC correspondiente: ${rfc}`);
-            setIsNewClient(null);
+            setIsNewClient(false); // Si encontramos el cliente, no es nuevo
+            setRfcWarning(''); // Limpiar advertencia
         } catch (error) {
             console.error('Cliente no encontrado', error);
-            alert('Cliente no encontrado. Por favor, verifique el RFC ingresado.');
+            setRfcWarning('RFC NO EXISTENTE');
+            setCliente(null);
         }
-    }, [rfc]);
+    }, [rfc, validarLongitudRFC]);
 
-    // Crear una función para validar que el RFC no exista. Si ya existe, se muestra un aviso y se impide enviar el formulario.
-    const handleValidateRFC = useCallback(async () => {
+    const handleRFCChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        let value = e.target.value.toUpperCase();
+        if (tipoPersona === 'fisica') value = value.slice(0, 13);
+        else if (tipoPersona === 'moral') value = value.slice(0, 12);
+        setRFC(value);
+        setRfcWarning('');
+    }, [tipoPersona]);
+
+    const handleRFCBlur = useCallback(async () => {
+        if (!rfc) return;
+        if ((tipoPersona === 'fisica' && rfc.length !== 13) || (tipoPersona === 'moral' && rfc.length !== 12)) return;
+        setRfcWarning('');
         try {
             const clienteData = await getClienteByRFC(rfc);
-            if (clienteData) {
-                alert(`El RFC ${rfc} ya existe. Será reeviado a mandar solo sus datos del inmueble.`);
-                setIsNewClient(false);
+            if (isNewClient) {
+                setRfcWarning('ESTE RFC YA EXISTE');
+                setCliente(null);
+            } else {
                 setCliente(clienteData);
-                return false; // Indica que el RFC ya existe
             }
-            // Si no se encuentra un cliente, se asume que el RFC es para un cliente nuevo
-            setIsNewClient(true);
-            return true; // Indica que el RFC es válido (cliente nuevo)
-        } catch (error) {
-            // En caso de error (por ejemplo, cliente no encontrado), se asume cliente nuevo
-            setIsNewClient(true);
-            return true;
+        } catch (error: any) {
+            if (!isNewClient) {
+                setRfcWarning('RFC NO EXISTENTE');
+                setCliente(null);
+            } else {
+                setRfcWarning('');
+                setCliente(null);
+                
+            }
         }
-    }, [rfc]);
+    }, [rfc, tipoPersona, isNewClient]);
+
+    const isFormValid = useCallback(() => {
+        if (isNewClient) {
+            if (!cliente || !cliente.rfc || !tipoPersona) return false;
+            if (tipoPersona === 'fisica') {
+                const c = cliente as IPersonaFisica;
+                if (!c.nombre || !c.apellidoPaterno || !c.apellidoMaterno || !c.fechaNacimiento || !c.correo || !c.telefono) return false;
+            } else if (tipoPersona === 'moral') {
+                const c = cliente as IPersonaMoral;
+                if (!c.razonSocial || !c.representanteLegal || !c.fechaConstitucion || !c.correo || !c.telefono) return false;
+            }
+        }
+        if (!inmueble.direccion || !inmueble.valorMercado || !inmueble.foto) return false;
+        if (!documentos.escritura || !documentos.libertad_gravamen || !documentos.avaluo || !documentos.fotografia) return false;
+        if (rfcWarning) return false;
+        return true;
+    }, [isNewClient, cliente, tipoPersona, inmueble, documentos, rfcWarning]);
 
     const handleFormSubmit = useCallback(async (event: React.FormEvent) => {
         event.preventDefault();
-
-
-        if (isNewClient && cliente?.rfc) {
-            setRFC(cliente.rfc);
-            const isValid = await handleValidateRFC();
-            if (!isValid) return; // Detener el envío si el RFC ya existe
-        }
-    
-        if (!cliente) {
-            alert('Por favor, complete los datos del cliente.');
+        if (!isFormValid()) {
+            alert('Por favor, llena todos los campos y documentos obligatorios.');
             return;
         }
-
-        if (!tipoPersona && isNewClient) {
-            alert('Por favor, seleccione el tipo de persona.');
-            return;
-        }
-
-        if (!inmueble.direccion) {
-            alert('Por favor, ingrese una dirección válida.');
-            return;
-        }
-
-        if (isNaN(inmueble.valorMercado) || inmueble.valorMercado <= 0) {
-            alert('Por favor, ingrese un valor de mercado válido.');
-            return;
-        }
-
+        setIsLoading(true);
+        setUploadProgress(0);
         try {
             let clienteId = cliente?.id;
             if (isNewClient) {
@@ -308,28 +196,29 @@ const ClienteForm = memo(() => {
                 const newCliente = await createCliente(clienteConTipo);
                 clienteId = newCliente.id;
             }
-
             const formData = new FormData();
             formData.append('direccion', inmueble.direccion);
             formData.append('valorMercado', inmueble.valorMercado.toString());
             formData.append('clienteId', clienteId!.toString());
-            if (inmueble.foto) {
-                formData.append('file', inmueble.foto);
-            }
-
+            if (inmueble.foto) formData.append('file', inmueble.foto);
+            // Simular progreso
+            setUploadProgress(20);
             const newInmueble = await createInmueble(formData);
-
-            // Subir documentos
-            const documentosPromises = Object.entries(documentos)
-                .filter(([_, file]) => file !== null)
-                .map(([tipo, file]) => {
-                    return DocumentoService.subirMultiplesDocumentos([file as File], newInmueble.id, tipo as TipoDocumento);
-                });
-
-            await Promise.all(documentosPromises);
+            setUploadProgress(50);
+            // Subir documentos con progreso
+            const totalDocs = 4;
+            let docsDone = 0;
+            for (const [tipo, file] of Object.entries(documentos)) {
+                if (file) {
+                    await DocumentoService.subirMultiplesDocumentos([file as File], newInmueble.id, tipo as TipoDocumento);
+                }
+                docsDone++;
+                setUploadProgress(50 + Math.round((docsDone / totalDocs) * 50));
+            }
             setOpenModal(true);
-
-            // Reiniciar estado
+            setIsLoading(false);
+            setUploadProgress(100);
+            // Reset
             setIsNewClient(null);
             setCliente(null);
             setRFC('');
@@ -337,11 +226,13 @@ const ClienteForm = memo(() => {
             setDocumentos({ escritura: null, libertad_gravamen: null, avaluo: null, fotografia: null });
             setTipoPersona('');
             setAddress('');
+            setRfcWarning('');
         } catch (error) {
-            console.error('Error al guardar los datos:', error);
+            setIsLoading(false);
+            setUploadProgress(0);
             alert('Error al guardar los datos. Por favor, intente nuevamente.');
         }
-    }, [cliente, tipoPersona, isNewClient, inmueble, documentos, handleValidateRFC, setRFC]);
+    }, [isFormValid, cliente, tipoPersona, isNewClient, inmueble, documentos]);
 
     const handleSetNewClient = useCallback((isNew: boolean) => {
         setIsNewClient(isNew);
@@ -360,10 +251,6 @@ const ClienteForm = memo(() => {
         setCliente(null);
     }, []);
 
-    const handleRFCChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-        setRFC(e.target.value);
-    }, []);
-
     const handleAddressChange = useCallback((value: string) => {
         setAddress(value);
     }, []);
@@ -379,7 +266,7 @@ const ClienteForm = memo(() => {
                 return {
                     [field]: value,
                     tipoPersona: tipoPersona || 'fisica' // Asegurarse de que tipoPersona tenga un valor
-                } as unknown as ICliente; // Realizar una conversión de tipo en dos pasos
+                } as unknown as ICliente;
             }
             // Si existe, actualizar el campo específico
             return { ...prev, [field]: value };
@@ -441,222 +328,20 @@ const ClienteForm = memo(() => {
         setInmueble(prev => ({ ...prev, foto: null }));
     }, []);
 
-    // Eliminé handleSelectCliente que no se utilizaba
     const handleSelectInmueble = useCallback((value: string) => handleSelect(value, 'inmueble'), [handleSelect]);
 
     const handleCloseModal = useCallback(() => setOpenModal(false), []);
 
-    // Componentes de formulario basados en el tipo de persona
-    const PersonaFisicaForm = useMemo(() => {
-        if (tipoPersona !== 'fisica') return null;
-
-        // Función auxiliar para formatear fechas
-        const formatearFecha = (fecha: any): string => {
-            if (!fecha) return '';
-            try {
-                // Si es una cadena con T, extraer solo la parte de la fecha
-                if (typeof fecha === 'string' && fecha.includes('T')) {
-                    return fecha.split('T')[0];
-                }
-                // Si es un objeto Date, convertirlo a formato ISO y extraer la fecha
-                if (fecha instanceof Date) {
-                    return fecha.toISOString().split('T')[0];
-                }
-                return String(fecha);
-            } catch (error) {
-                console.error("Error al formatear fecha:", error);
-                return '';
-            }
-        };
-
-        const formatearFechaVisualizacion = (fechaString: string): string => {
-            // Nos aseguramos que la fecha sea procesada correctamente ajustando la zona horaria
-            if (!fechaString) return '';
-
-            try {
-                // Dividir la fecha en partes
-                const [year, month, day] = fechaString.split('-').map(Number);
-
-                // Crear fecha con el día correcto (año, mes (0-indexado), día)
-                return new Date(year, month - 1, day).toLocaleDateString('es-MX');
-            } catch (error) {
-                console.error("Error al formatear fecha para visualización:", error);
-                return fechaString;
-            }
-        };
-
-        const fechaNacimiento = formatearFecha((cliente as IPersonaFisica)?.fechaNacimiento);
-
-        return (
-            <div className="grid grid-cols-2 gap-4">
-                <input
-                    type="text"
-                    placeholder="Nombre"
-                    value={(cliente as IPersonaFisica)?.nombre || ''}
-                    onChange={(e) => handleClienteChange('nombre', e.target.value)}
-                    className="input-primary col-span-2"
-                />
-                <input
-                    type="text"
-                    placeholder="Apellido Paterno"
-                    value={(cliente as IPersonaFisica)?.apellidoPaterno || ''}
-                    onChange={(e) => handleClienteChange('apellidoPaterno', e.target.value)}
-                    className="input-primary col-span-1"
-                />
-                <input
-                    type="text"
-                    placeholder="Apellido Materno"
-                    value={(cliente as IPersonaFisica)?.apellidoMaterno || ''}
-                    onChange={(e) => handleClienteChange('apellidoMaterno', e.target.value)}
-                    className="input-primary col-span-1"
-                />
-                <input
-                    type="text"
-                    placeholder="RFC"
-                    value={(cliente as IPersonaFisica)?.rfc || ''}
-                    onChange={(e) => handleClienteChange('rfc', e.target.value)}
-                    onBlur={() => {
-                        if ((cliente as IPersonaFisica)?.rfc) {
-                            setRFC((cliente as IPersonaFisica)?.rfc);
-                            handleValidateRFC();
-                        }
-                    }}
-                    className="input-primary col-span-1"
-                />
-                <div className="col-span-1">
-                    <input
-                        type="date"
-                        placeholder="Fecha de nacimiento"
-                        value={fechaNacimiento}
-                        onChange={(e) => handleClienteChange('fechaNacimiento', e.target.value)}
-                        className="input-primary w-full"
-                    />
-                    {fechaNacimiento && (
-                        <div className="text-xs text-gray-600 mt-1">
-                            Fecha seleccionada: {formatearFechaVisualizacion(fechaNacimiento)}
-                        </div>
-                    )}
-                </div>
-                <input
-                    type="email"
-                    placeholder="Correo electrónico"
-                    value={(cliente as IPersonaFisica)?.correo || ''}
-                    onChange={(e) => handleClienteChange('correo', e.target.value)}
-                    className="input-primary col-span-1"
-                />
-                <input
-                    type="tel"
-                    placeholder="Teléfono"
-                    value={(cliente as IPersonaFisica)?.telefono || ''}
-                    onChange={(e) => handleClienteChange('telefono', e.target.value)}
-                    className="input-primary col-span-1"
-                />
-            </div>
-        );
-    }, [tipoPersona, cliente, handleClienteChange]);
-    const PersonaMoralForm = useMemo(() => {
-        if (tipoPersona !== 'moral') return null;
-
-        // Función auxiliar para formatear fechas
-        const formatearFecha = (fecha: any): string => {
-            if (!fecha) return '';
-            try {
-                // Si es una cadena con T, extraer solo la parte de la fecha
-                if (typeof fecha === 'string' && fecha.includes('T')) {
-                    return fecha.split('T')[0];
-                }
-                // Si es un objeto Date, convertirlo a formato ISO y extraer la fecha
-                if (fecha instanceof Date) {
-                    return fecha.toISOString().split('T')[0];
-                }
-                return String(fecha);
-            } catch (error) {
-                console.error("Error al formatear fecha:", error);
-                return '';
-            }
-        };
-
-        const formatearFechaVisualizacion = (fechaString: string): string => {
-            // Nos aseguramos que la fecha sea procesada correctamente ajustando la zona horaria
-            if (!fechaString) return '';
-
-            try {
-                // Dividir la fecha en partes
-                const [year, month, day] = fechaString.split('-').map(Number);
-
-                // Crear fecha con el día correcto (año, mes (0-indexado), día)
-                return new Date(year, month - 1, day).toLocaleDateString('es-MX');
-            } catch (error) {
-                console.error("Error al formatear fecha para visualización:", error);
-                return fechaString;
-            }
-        };
-
-        const fechaConstitucion = formatearFecha((cliente as IPersonaMoral)?.fechaConstitucion);
-
-        return (
-            <div className="grid grid-cols-2 gap-4">
-                <input
-                    type="text"
-                    placeholder="Razón Social"
-                    value={(cliente as IPersonaMoral)?.razonSocial || ''}
-                    onChange={(e) => handleClienteChange('razonSocial', e.target.value)}
-                    className="input-primary col-span-1"
-                />
-                <input
-                    type="text"
-                    placeholder="Representante Legal"
-                    value={(cliente as IPersonaMoral)?.representanteLegal || ''}
-                    onChange={(e) => handleClienteChange('representanteLegal', e.target.value)}
-                    className="input-primary col-span-1"
-                />
-                <input
-                    type="text"
-                    placeholder="RFC"
-                    value={(cliente as IPersonaMoral)?.rfc || ''}
-                    onChange={(e) => handleClienteChange('rfc', e.target.value)}
-                    onBlur={() => {
-                        if ((cliente as IPersonaMoral)?.rfc) {
-                            setRFC((cliente as IPersonaMoral)?.rfc);
-                            handleValidateRFC();
-                        }
-                    }}
-                    className="input-primary col-span-1"
-                />
-                <div className="col-span-1">
-                    <input
-                        type="date"
-                        placeholder="Fecha de constitución"
-                        value={fechaConstitucion}
-                        onChange={(e) => handleClienteChange('fechaConstitucion', e.target.value)}
-                        className="input-primary w-full"
-                    />
-                    {fechaConstitucion && (
-                        <div className="text-xs text-gray-600 mt-1">
-                            Fecha seleccionada: {formatearFechaVisualizacion(fechaConstitucion)}
-                        </div>
-                    )}
-                </div>
-                <input
-                    type="email"
-                    placeholder="Correo electrónico"
-                    value={(cliente as IPersonaMoral)?.correo || ''}
-                    onChange={(e) => handleClienteChange('correo', e.target.value)}
-                    className="input-primary col-span-1"
-                />
-                <input
-                    type="tel"
-                    placeholder="Teléfono"
-                    value={(cliente as IPersonaMoral)?.telefono || ''}
-                    onChange={(e) => handleClienteChange('telefono', e.target.value)}
-                    className="input-primary col-span-1"
-                />
-            </div>
-        );
-    }, [tipoPersona, cliente, handleClienteChange]);
-
     return (
         <div className="cliente-form">
+            {isLoading && (
+                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+                    <div className="flex flex-col items-center p-8 bg-white rounded-lg shadow-lg">
+                        <div className="loader-spinner mb-4" style={{ width: 48, height: 48, border: '6px solid #e5e7eb', borderTop: '6px solid #dc2626', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                        <div className="text-lg font-semibold">Subiendo archivos... {uploadProgress}%</div>
+                    </div>
+                </div>
+            )}
             {isNewClient === null && !cliente && (
                 <div className="text-center">
                     <p className="text-lg font-semibold">¿Es un cliente nuevo?</p>
@@ -685,8 +370,11 @@ const ClienteForm = memo(() => {
                             placeholder="Ingrese RFC"
                             value={rfc}
                             onChange={handleRFCChange}
+                            onBlur={handleRFCBlur}
+                            maxLength={tipoPersona === 'fisica' ? 13 : 12}
                             className="text-center input-primary-rfc"
                         />
+                        {rfcWarning && <p className="text-red-500 font-bold mt-2">{rfcWarning}</p>}
                         <div className="cliente-form__navigation col-span-1 md:col-span-2">
                             <button
                                 type="button"
@@ -713,118 +401,43 @@ const ClienteForm = memo(() => {
             {(isNewClient === true || cliente) && (
                 <div className='form-container'>
                     <form className="cliente-form__grid" onSubmit={handleFormSubmit}>
-                        {isNewClient && (
-                            <div className="cliente-form__columna col-span-1">
-                                <h3 className="text-xl font-semibold mb-4">Datos del Cliente</h3>
-                                <select
-                                    value={tipoPersona}
-                                    onChange={handleTipoPersonaChange}
-                                    className='mb-4 input-primary'
-                                >
-                                    <option value="">Seleccione el tipo de persona</option>
-                                    <option value="fisica">Persona Física</option>
-                                    <option value="moral">Persona Moral</option>
-                                </select>
+                        {/* Componente de Cliente */}
+                        <ClienteFormComponent 
+                            isNewClient={!!isNewClient}
+                            tipoPersona={tipoPersona}
+                            cliente={cliente}
+                            handleClienteChange={handleClienteChange}
+                            handleTipoPersonaChange={handleTipoPersonaChange}
+                            handleRFCBlur={handleRFCBlur}
+                            rfcWarning={rfcWarning}
+                        />
 
-                                {PersonaFisicaForm}
-                                {PersonaMoralForm}
-                            </div>
-                        )}
+                        {/* Componente de Inmueble */}
+                        <InmuebleForm
+                            inmueble={inmueble}
+                            address={address}
+                            handleAddressChange={handleAddressChange}
+                            handleSelectInmueble={handleSelectInmueble}
+                            valorMercadoFormatted={valorMercadoFormatted}
+                            handleValorMercadoChange={handleValorMercadoChange}
+                            handleValorMercadoBlur={handleValorMercadoBlur}
+                            handleValorMercadoFocus={handleValorMercadoFocus}
+                            handleInmuebleFotoDrop={handleInmuebleFotoDrop}
+                            handleInmuebleFotoRemove={handleInmuebleFotoRemove}
+                        />
 
-                        <div className="cliente-form__columna col-span-1">
-                            <h3 className="text-xl font-semibold mb-4">Datos del Inmueble</h3>
-                            <div className="cliente-form__section gap-4">
-                                <MemoizedAddressInput
-                                    value={address}
-                                    onChange={handleAddressChange}
-                                    onSelect={handleSelectInmueble}
-                                    placeholder="Busca dirección..."
-                                />
-
-                                <input
-                                    type="text"
-                                    placeholder="Valor de Mercado"
-                                    value={valorMercadoFormatted}
-                                    onChange={handleValorMercadoChange}
-                                    onBlur={handleValorMercadoBlur}
-                                    onFocus={handleValorMercadoFocus}
-                                    className="input-primary"
-                                />
-                            </div>
-
-                            <div className="cliente-form__section col-span-1 md:col-span-2">
-                                <h4 className="text-s font-semibold mt-4 mb-4">Fotografía del Inmueble</h4>
-                                <Dropzone onDrop={handleInmuebleFotoDrop} accept={convertAcceptTypesToObject('image/*')}>
-                                    {({ getRootProps, getInputProps }) => (
-                                        <div {...getRootProps()} className="dropzone p-4 border-dashed border-2 border-gray-300 rounded-md text-center cursor-pointer">
-                                            <input {...getInputProps()} />
-                                            {inmueble.foto ? (
-                                                <>
-                                                    <p className="text-gray-700">Archivo seleccionado: {inmueble.foto.name}</p>
-                                                    <button
-                                                        type="button"
-                                                        className="btn-primary bg-red-500 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 transition duration-300 ease-in-out transform hover:scale-105 mt-2"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleInmuebleFotoRemove();
-                                                        }}>
-                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                                                        </svg>
-                                                    </button>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <p className="text-gray-500">Arrastra y suelta una imagen aquí, o haz clic para seleccionar una</p>
-                                                    <button type="button" className="btn-primary bg-green-500 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition duration-300 ease-in-out transform hover:scale-105">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
-                                                        </svg>
-                                                    </button>
-                                                </>
-                                            )}
-                                        </div>
-                                    )}
-                                </Dropzone>
-                            </div>
-                        </div>
-
-                        <div className="cliente-form__columna col-span-1">
-                            <h3 className="text-xl font-semibold mb-4">Documentos</h3>
-                            <div className="grid grid-cols-2 gap-4">
-                                <MemoizedDocumentoDropzone
-                                    label="Escritura"
-                                    documento={documentos.escritura}
-                                    onDrop={handleDocumentoEscrituraDrop}
-                                    onRemove={handleDocumentoEscrituraRemove}
-                                    acceptTypes=".pdf,.doc,.docx"
-                                />
-
-                                <MemoizedDocumentoDropzone
-                                    label="Libertad de Gravamen"
-                                    documento={documentos.libertad_gravamen}
-                                    onDrop={handleDocumentoLibertadDrop}
-                                    onRemove={handleDocumentoLibertadRemove}
-                                    acceptTypes=".pdf,.doc,.docx"
-                                />
-
-                                <MemoizedDocumentoDropzone
-                                    label="Avalúo"
-                                    documento={documentos.avaluo}
-                                    onDrop={handleDocumentoAvaluoDrop}
-                                    onRemove={handleDocumentoAvaluoRemove}
-                                    acceptTypes=".pdf,.doc,.docx"
-                                />
-
-                                <MemoizedDocumentoDropzone
-                                    label="Fotografía"
-                                    documento={documentos.fotografia}
-                                    onDrop={handleDocumentoFotografiaDrop}
-                                    onRemove={handleDocumentoFotografiaRemove}
-                                    acceptTypes="image/*"
-                                />
-                            </div>
-                        </div>
+                        {/* Componente de Documentos */}
+                        <DocumentosForm
+                            documentos={documentos}
+                            handleDocumentoEscrituraDrop={handleDocumentoEscrituraDrop}
+                            handleDocumentoEscrituraRemove={handleDocumentoEscrituraRemove}
+                            handleDocumentoLibertadDrop={handleDocumentoLibertadDrop}
+                            handleDocumentoLibertadRemove={handleDocumentoLibertadRemove}
+                            handleDocumentoAvaluoDrop={handleDocumentoAvaluoDrop}
+                            handleDocumentoAvaluoRemove={handleDocumentoAvaluoRemove}
+                            handleDocumentoFotografiaDrop={handleDocumentoFotografiaDrop}
+                            handleDocumentoFotografiaRemove={handleDocumentoFotografiaRemove}
+                        />
 
                         <div className="flex justify-center col-span-3 mt-4 gap-4">
                             <button
@@ -848,10 +461,6 @@ const ClienteForm = memo(() => {
                     </form>
                 </div>
             )}
-
-
-
-
 
             <Modal open={openModal} onClose={handleCloseModal}>
                 <div className="modal-content p-6 bg-white rounded-lg shadow-xl max-w-md mx-auto text-center">
@@ -879,7 +488,5 @@ const ClienteForm = memo(() => {
 
 // Añadir displayName para herramientas de desarrollo
 ClienteForm.displayName = 'ClienteForm';
-MemoizedDocumentoDropzone.displayName = 'MemoizedDocumentoDropzone';
-MemoizedAddressInput.displayName = 'MemoizedAddressInput';
 
 export default ClienteForm;

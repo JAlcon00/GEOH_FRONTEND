@@ -96,7 +96,15 @@ const DocumentoByInmueble: React.FC<DocumentoByInmuebleProps> = ({ inmuebleId, o
             try {
                 await DocumentoService.eliminarDocumento(docId);
                 setDeletedDocs(prev => new Set(prev).add(docId));
-            } catch (error) {
+                if (typeof window !== 'undefined' && window.toast) window.toast.success('Documento eliminado exitosamente');
+            } catch (error: any) {
+                const status = error?.status || error?.response?.status;
+                if (status === 404) {
+                    setDeletedDocs(prev => new Set(prev).add(docId));
+                    if (typeof window !== 'undefined' && window.toast) window.toast.warning('El documento ya no existe');
+                } else {
+                    if (typeof window !== 'undefined' && window.toast) window.toast.error('Ocurrió un error al eliminar');
+                }
                 console.error("Error al eliminar documento:", error);
             }
         }

@@ -47,7 +47,16 @@ class DocumentoService {
 
     // Método para eliminar un documento por su ID
     async eliminarDocumento(id: number): Promise<void> {
-        await api.delete(`/documentos/${id}`);
+        try {
+            await api.delete(`/documentos/${id}`);
+        } catch (err: any) {
+            const status = err.response?.status;
+            if (status === 404) {
+                // Permitir manejar el 404 en el componente (no lanzar error)
+                throw { status: 404, message: 'El documento ya no existe' };
+            }
+            throw err;
+        }
     }
 
     // Método para actualizar un documento por su ID
