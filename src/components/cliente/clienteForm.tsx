@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
-import { Modal } from '@material-ui/core';
+import { Modal } from '@mui/material';
 import { IPersonaFisica, IPersonaMoral, ICliente, IClienteConTipo } from '../../types/cliente.types';
 import { loadGoogleMaps } from '../../services/geocode.service';
 import { IInmueble } from '../../types/inmueble.types';
