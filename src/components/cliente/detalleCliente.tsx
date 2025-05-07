@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { getClienteByRFC } from '../../services/cliente.service';
 import { getInmueblesByCliente } from '../../services/inmueble.service';
-import { FaUser, FaBuilding, FaIdCard, FaEnvelope, FaPhone, FaCalendarAlt, FaMapMarkerAlt, FaCity, FaFlag } from 'react-icons/fa';
+import { FaUser, FaBuilding, FaIdCard, FaEnvelope, FaPhone, FaCalendarAlt, FaMapMarkerAlt, FaCity } from 'react-icons/fa';
 
 interface Cliente {
     id: number;

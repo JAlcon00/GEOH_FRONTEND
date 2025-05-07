@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { IPersonaFisica, IPersonaMoral, ICliente } from '../../../types/cliente.types';
 
 interface ClienteProps {

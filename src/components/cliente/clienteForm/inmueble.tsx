@@ -1,4 +1,4 @@
-import React, { memo, useMemo } from 'react';
+import React, { memo } from 'react';
 import { IInmueble } from '../../../types/inmueble.types';
 import PlacesAutocomplete from 'react-places-autocomplete';
 import { FaSearch } from 'react-icons/fa';

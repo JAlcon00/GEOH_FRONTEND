@@ -11,7 +11,6 @@ interface Usuario {
 
 interface UsuarioRowProps {
   usuario: Usuario;
-  handleVer: (id: number) => void;
   openEditModal: (usuario: Usuario) => void;
   openEliminarModal: (id: number) => void;
 }
@@ -19,7 +18,6 @@ interface UsuarioRowProps {
 // Componente memorizado para la fila de usuario
 const UsuarioRow = memo<UsuarioRowProps>(({
   usuario,
-  handleVer,
   openEditModal,
   openEliminarModal
 }) => {
@@ -301,7 +299,6 @@ const UsuarioManager: React.FC = memo(() => {
                   <UsuarioRow
                     key={usuario.id}
                     usuario={usuario}
-                    handleVer={handleVer}
                     openEditModal={openEditModal}
                     openEliminarModal={openEliminarModal}
                   />
