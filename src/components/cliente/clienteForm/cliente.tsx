@@ -46,8 +46,12 @@ const ClienteForm: React.FC<ClienteProps> = ({
         const formatearFechaVisualizacion = (fechaString: string): string => {
             if (!fechaString) return '';
             try {
+                // Crear la fecha ajustando a mediodía para evitar problemas de zona horaria
                 const [year, month, day] = fechaString.split('-').map(Number);
-                return new Date(year, month - 1, day).toLocaleDateString('es-MX');
+                
+                // Forzar UTC y usar el mediodía para evitar problemas de zonas horarias
+                const fecha = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+                return fecha.toLocaleDateString('es-MX');
             } catch (error) {
                 console.error("Error al formatear fecha para visualización:", error);
                 return fechaString;
@@ -146,8 +150,12 @@ const ClienteForm: React.FC<ClienteProps> = ({
         const formatearFechaVisualizacion = (fechaString: string): string => {
             if (!fechaString) return '';
             try {
+                // Crear la fecha ajustando a mediodía para evitar problemas de zona horaria
                 const [year, month, day] = fechaString.split('-').map(Number);
-                return new Date(year, month - 1, day).toLocaleDateString('es-MX');
+                
+                // Forzar UTC y usar el mediodía para evitar problemas de zonas horarias
+                const fecha = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+                return fecha.toLocaleDateString('es-MX');
             } catch (error) {
                 console.error("Error al formatear fecha para visualización:", error);
                 return fechaString;

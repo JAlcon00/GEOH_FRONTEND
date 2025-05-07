@@ -187,9 +187,27 @@ const ClienteForm = memo(() => {
             alert('Por favor, llena todos los campos y documentos obligatorios.');
             return;
         }
-        setIsLoading(true);
-        setUploadProgress(0);
+
+        // Verificar existencia del RFC antes de continuar
         try {
+            const clienteRFC = cliente?.rfc || rfc;
+            if (clienteRFC && isNewClient) {
+                try {
+                    const existingCliente = await getClienteByRFC(clienteRFC);
+                    if (existingCliente) {
+                        setRfcWarning('ESTE CLIENTE YA EXISTE');
+                        alert('No se puede continuar. Este RFC ya está registrado en el sistema.');
+                        return;
+                    }
+                } catch (error) {
+                    // Si hay un error 404, significa que el cliente no existe, lo cual es correcto
+                    console.log('RFC disponible, continuando con el registro');
+                }
+            }
+            
+            setIsLoading(true);
+            setUploadProgress(0);
+            
             let clienteId = cliente?.id;
             if (isNewClient) {
                 const clienteConTipo: IClienteConTipo = { ...(cliente as unknown as ICliente), tipoPersona: tipoPersona as 'fisica' | 'moral' };

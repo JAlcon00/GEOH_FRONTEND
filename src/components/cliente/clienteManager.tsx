@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, memo } from 'react';
-import { FaEye, FaEdit, FaTrash, FaHome } from 'react-icons/fa';
+import { FaEye, FaEdit, FaTrash, FaHome, FaSearch, FaUser, FaBuilding, FaFilter } from 'react-icons/fa';
 import { getClientes, createCliente, updateCliente, deleteCliente } from '../../services/cliente.service';
 import { deleteInmueble } from '../../services/inmueble.service';
 import documentoService from '../../services/documento.service';
@@ -42,6 +42,29 @@ interface VirtualizedClienteListProps {
     handleFetchInmuebles: (id: number) => void;
 }
 
+// Función auxiliar para formatear fechas correctamente
+const formatearFecha = (fechaString?: string): string => {
+    if (!fechaString) return 'N/A';
+    try {
+        // Crear la fecha con configuración UTC explícita para evitar desplazamiento por zona horaria
+        const fecha = new Date(fechaString);
+        
+        // Ajuste para compensar el desplazamiento horario
+        const fechaAjustada = new Date(fecha.getTime() + fecha.getTimezoneOffset() * 60 * 1000);
+        
+        // Formatear la fecha con opciones explícitas
+        return fechaAjustada.toLocaleDateString('es-MX', { 
+            day: '2-digit', 
+            month: 'long', 
+            year: 'numeric',
+            timeZone: 'UTC'
+        });
+    } catch (error) {
+        console.error('Error al formatear fecha:', error);
+        return 'N/A';
+    }
+};
+
 // Obtener el tipo de usuario desde localStorage
 const tipoUsuario = localStorage.getItem('tipo_usuario');
 
@@ -55,33 +78,33 @@ const ClienteRow = memo<ClienteRowProps>(({
     handleFetchInmuebles
 }) => {
     return (
-        <tr className="hover:bg-gray-50">
+        <tr className="hover:bg-slate-50 transition-colors duration-200">
             {tipoPersonaFiltro === 'fisica' ? (
                 <>
                     <td className="hidden md:table-cell py-4 px-4 whitespace-nowrap">{cliente.nombre}</td>
                     <td className="hidden md:table-cell py-4 px-4 whitespace-nowrap">{`${cliente.apellidoPaterno} ${cliente.apellidoMaterno}`}</td>
-                    <td className="py-4 px-4 whitespace-nowrap">{cliente.rfc}</td>
-                    <td className="hidden lg:table-cell py-4 px-4 whitespace-nowrap">
-                        {cliente.fechaNacimiento ? new Date(cliente.fechaNacimiento).toLocaleDateString() : 'N/A'}
+                    <td className="py-4 px-4 whitespace-nowrap font-medium text-gray-700">{cliente.rfc}</td>
+                    <td className="hidden lg:table-cell py-4 px-4 whitespace-nowrap text-gray-600">
+                        {formatearFecha(cliente.fechaNacimiento)}
                     </td>
                     <td className="hidden md:table-cell py-4 px-4">
                         <div className="text-sm">
-                            <p className="text-gray-900">{cliente.correo}</p>
+                            <p className="text-gray-800 font-medium">{cliente.correo}</p>
                             <p className="text-gray-500">{cliente.telefono}</p>
                         </div>
                     </td>
                 </>
             ) : (
                 <>
-                    <td className="py-4 px-4 whitespace-nowrap">{cliente.razonSocial}</td>
+                    <td className="py-4 px-4 whitespace-nowrap font-medium">{cliente.razonSocial}</td>
                     <td className="hidden md:table-cell py-4 px-4 whitespace-nowrap">{cliente.representanteLegal}</td>
-                    <td className="py-4 px-4 whitespace-nowrap">{cliente.rfc}</td>
-                    <td className="hidden lg:table-cell py-4 px-4 whitespace-nowrap">
-                        {cliente.fechaConstitucion ? new Date(cliente.fechaConstitucion).toLocaleDateString() : 'N/A'}
+                    <td className="py-4 px-4 whitespace-nowrap font-medium text-gray-700">{cliente.rfc}</td>
+                    <td className="hidden lg:table-cell py-4 px-4 whitespace-nowrap text-gray-600">
+                        {formatearFecha(cliente.fechaConstitucion)}
                     </td>
                     <td className="hidden md:table-cell py-4 px-4">
                         <div className="text-sm">
-                            <p className="text-gray-900">{cliente.correo}</p>
+                            <p className="text-gray-800 font-medium">{cliente.correo}</p>
                             <p className="text-gray-500">{cliente.telefono}</p>
                         </div>
                     </td>
@@ -89,21 +112,21 @@ const ClienteRow = memo<ClienteRowProps>(({
             )}
             <td className="py-4 px-4">
                 <div className="flex justify-center space-x-2">
-                    <button className="p-1 hover:bg-gray-100 rounded-full" onClick={() => openDetalleCliente(cliente.rfc!)}>
-                        <FaEye className="w-5 h-5 text-gray-600" />
+                    <button className="p-2 hover:bg-slate-100 rounded-full transition-colors" onClick={() => openDetalleCliente(cliente.rfc!)}>
+                        <FaEye className="w-5 h-5 text-blue-600" />
                     </button>
                     {tipoUsuario === 'administrador' && (
                         <>
-                            <button className="p-1 hover:bg-gray-100 rounded-full" onClick={() => handleEdit(cliente)}>
-                                <FaEdit className="w-5 h-5 text-yellow-500" />
+                            <button className="p-2 hover:bg-slate-100 rounded-full transition-colors" onClick={() => handleEdit(cliente)}>
+                                <FaEdit className="w-5 h-5 text-amber-500" />
                             </button>
-                            <button className="p-1 hover:bg-gray-100 rounded-full" onClick={() => openModal(cliente.id)}>
+                            <button className="p-2 hover:bg-slate-100 rounded-full transition-colors" onClick={() => openModal(cliente.id)}>
                                 <FaTrash className="w-5 h-5 text-red-500" />
                             </button>
                         </>
                     )}
-                    <button className="hidden sm:block p-1 hover:bg-gray-100 rounded-full" onClick={() => handleFetchInmuebles(cliente.id)}>
-                        <FaHome className="w-5 h-5 text-green-500" />
+                    <button className="hidden sm:block p-2 hover:bg-slate-100 rounded-full transition-colors" onClick={() => handleFetchInmuebles(cliente.id)}>
+                        <FaHome className="w-5 h-5 text-green-600" />
                     </button>
                 </div>
             </td>
@@ -126,70 +149,70 @@ const VirtualizedClienteList = memo<VirtualizedClienteListProps>(({
     const ClienteItem = memo(({ index, style }: ListChildComponentProps) => {
         const cliente = clientes[index];
         return (
-            <div style={style} className="border-b border-gray-200">
+            <div style={style} className="border-b border-gray-200 hover:bg-slate-50">
                 <div className="flex items-center px-4 py-2">
                     {tipoPersonaFiltro === 'fisica' ? (
                         <>
-                            <div className="hidden md:block w-1/5">{cliente.nombre}</div>
+                            <div className="hidden md:block w-1/5 font-medium">{cliente.nombre}</div>
                             <div className="hidden md:block w-1/5">{`${cliente.apellidoPaterno} ${cliente.apellidoMaterno}`}</div>
-                            <div className="w-1/5">{cliente.rfc}</div>
-                            <div className="hidden lg:block w-1/5">
-                                {cliente.fechaNacimiento ? new Date(cliente.fechaNacimiento).toLocaleDateString() : 'N/A'}
+                            <div className="w-1/5 font-medium text-gray-700">{cliente.rfc}</div>
+                            <div className="hidden lg:block w-1/5 text-gray-600">
+                                {formatearFecha(cliente.fechaNacimiento)}
                             </div>
                             <div className="hidden md:block w-1/5">
                                 <div className="text-sm">
-                                    <p className="text-gray-900">{cliente.correo}</p>
+                                    <p className="text-gray-800 font-medium">{cliente.correo}</p>
                                     <p className="text-gray-500">{cliente.telefono}</p>
                                 </div>
                             </div>
                         </>
                     ) : (
                         <>
-                            <div className="w-1/5">{cliente.razonSocial}</div>
+                            <div className="w-1/5 font-medium">{cliente.razonSocial}</div>
                             <div className="hidden md:block w-1/5">{cliente.representanteLegal}</div>
-                            <div className="w-1/5">{cliente.rfc}</div>
-                            <div className="hidden lg:block w-1/5">
-                                {cliente.fechaConstitucion ? new Date(cliente.fechaConstitucion).toLocaleDateString() : 'N/A'}
+                            <div className="w-1/5 font-medium text-gray-700">{cliente.rfc}</div>
+                            <div className="hidden lg:block w-1/5 text-gray-600">
+                                {formatearFecha(cliente.fechaConstitucion)}
                             </div>
                             <div className="hidden md:block w-1/5">
                                 <div className="text-sm">
-                                    <p className="text-gray-900">{cliente.correo}</p>
+                                    <p className="text-gray-800 font-medium">{cliente.correo}</p>
                                     <p className="text-gray-500">{cliente.telefono}</p>
                                 </div>
                             </div>
                         </>
                     )}
                     <div className="w-1/5">
-                        <div className="flex justify-center space-x-2">
+                        <div className="flex justify-center space-x-1">
                             <button
-                                className="p-1 hover:bg-gray-100 rounded-full"
+                                className="p-2 hover:bg-slate-100 rounded-full transition-colors"
                                 onClick={() => openDetalleCliente(cliente.rfc!)}
                                 aria-label="Ver detalles"
                             >
-                                <FaEye className="w-5 h-5 text-gray-600" />
+                                <FaEye className="w-4 h-4 text-blue-600" />
                             </button>
                             {tipoUsuario === 'administrador' && (
                                 <>
                                     <button
-                                        className="p-1 hover:bg-gray-100 rounded-full"
+                                        className="p-2 hover:bg-slate-100 rounded-full transition-colors"
                                         onClick={() => handleEdit(cliente)}
                                         aria-label="Editar cliente"
                                     >
-                                        <FaEdit className="w-5 h-5 text-yellow-500" />
+                                        <FaEdit className="w-4 h-4 text-amber-500" />
                                     </button>
                                     <button
-                                        className="p-1 hover:bg-gray-100 rounded-full"
+                                        className="p-2 hover:bg-slate-100 rounded-full transition-colors"
                                         onClick={() => openModal(cliente.id)}
                                         aria-label="Eliminar cliente"
                                     >
-                                        <FaTrash className="w-5 h-5 text-red-500" />
+                                        <FaTrash className="w-4 h-4 text-red-500" />
                                     </button>
                                 </>
                             )}
                             <button 
-                                className="hidden sm:block p-1 hover:bg-gray-100 rounded-full" 
+                                className="hidden sm:block p-2 hover:bg-slate-100 rounded-full transition-colors" 
                                 onClick={() => handleFetchInmuebles(cliente.id)}>
-                                <FaHome className="w-5 h-5 text-green-500" />
+                                <FaHome className="w-4 h-4 text-green-600" />
                             </button>
                         </div>
                     </div>
@@ -204,7 +227,7 @@ const VirtualizedClienteList = memo<VirtualizedClienteListProps>(({
             itemCount={clientes.length}
             itemSize={ROW_HEIGHT}
             width="100%"
-            className="rounded-lg border border-gray-200"
+            className="rounded-lg border border-gray-200 shadow-sm"
         >
             {ClienteItem}
         </List>
@@ -344,47 +367,70 @@ const ClienteManager: React.FC = memo(() => {
     }, []);
 
     return (
-        <div className="m-4 p-4 bg-white rounded-lg shadow-sm">
-            <h2 className="text-gray-800 text-xl md:text-2xl font-bold mb-6">Gestor de Clientes</h2>
-            {error && <p className="text-red-500 mb-4">{error}</p>}
+        <div className="m-4 p-6 bg-white rounded-xl shadow-md">
+            <h2 className="text-gray-800 text-xl md:text-2xl font-bold mb-6 flex items-center gap-2">
+                <span className="bg-gradient-to-r from-red-500 to-red-700 text-white p-2 rounded-lg inline-flex items-center justify-center shadow-sm">
+                    {tipoPersonaFiltro === 'fisica' ? <FaUser className="w-5 h-5" /> : <FaBuilding className="w-5 h-5" />}
+                </span>
+                Gestor de Clientes
+            </h2>
+            
+            {error && (
+                <div className="mb-6 p-3 bg-red-50 text-red-700 rounded-lg border border-red-200">
+                    <p className="flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                        {error}
+                    </p>
+                </div>
+            )}
 
             <div className="flex flex-col md:flex-row items-start md:items-center gap-4 mb-6">
-                <input
-                    type="text"
-                    placeholder="Buscar clientes..."
-                    value={searchTerm}
-                    onChange={handleSearch}
-                    className="w-full md:w-64 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                />
-                <div className="flex flex-col md:flex-row items-start md:items-center gap-2 w-full md:w-auto">
-                    <label className="text-gray-700 text-sm md:text-base">Tipo de Persona:</label>
-                    <select
-                        value={tipoPersonaFiltro}
-                        onChange={(e) => setTipoPersonaFiltro(e.target.value)}
-                        className="w-full md:w-auto px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                    >
-                        <option value="fisica">Persona Física</option>
-                        <option value="moral">Persona Moral</option>
-                    </select>
+                <div className="relative w-full md:w-64">
+                    <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    <input
+                        type="text"
+                        placeholder="Buscar clientes..."
+                        value={searchTerm}
+                        onChange={handleSearch}
+                        className="w-full pl-10 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent shadow-sm"
+                    />
+                </div>
+                
+                <div className="flex flex-col md:flex-row items-start md:items-center gap-3 w-full md:w-auto">
+                    <div className="flex items-center gap-2 bg-slate-50 p-2 rounded-lg border border-gray-200 shadow-sm">
+                        <FaFilter className="text-gray-500" />
+                        <select
+                            value={tipoPersonaFiltro}
+                            onChange={(e) => setTipoPersonaFiltro(e.target.value)}
+                            className="p-1 bg-transparent border-none focus:ring-0 text-gray-700"
+                        >
+                            <option value="fisica">Persona Física</option>
+                            <option value="moral">Persona Moral</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
             {filteredClientes.length > 30 ? (
                 // Usar virtualización para grandes listas
-                <VirtualizedClienteList
-                    clientes={filteredClientes}
-                    tipoPersonaFiltro={tipoPersonaFiltro}
-                    openDetalleCliente={openDetalleCliente}
-                    handleEdit={handleEdit}
-                    openModal={openModal}
-                    handleFetchInmuebles={handleFetchInmuebles}
-                />
+                <div className="overflow-hidden border border-gray-200 rounded-xl shadow-sm mb-6">
+                    <VirtualizedClienteList
+                        clientes={filteredClientes}
+                        tipoPersonaFiltro={tipoPersonaFiltro}
+                        openDetalleCliente={openDetalleCliente}
+                        handleEdit={handleEdit}
+                        openModal={openModal}
+                        handleFetchInmuebles={handleFetchInmuebles}
+                    />
+                </div>
             ) : (
                 // Renderizado responsivo: tabla en md+ y tarjetas en móvil
-                <div className="overflow-x-auto rounded-lg border border-gray-200">
+                <div className="overflow-x-auto rounded-xl border border-gray-200 shadow-sm mb-6">
                   {/* Tabla tradicional en md+ */}
                   <table className="hidden md:table min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
+                    <thead className="bg-gradient-to-r from-gray-50 to-slate-50">
                       {tipoPersonaFiltro === 'fisica' ? (
                         <tr>
                           <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
@@ -406,97 +452,114 @@ const ClienteManager: React.FC = memo(() => {
                       )}
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {filteredClientes.map((cliente) => (
-                        <ClienteRow
-                          key={cliente.id}
-                          cliente={cliente}
-                          tipoPersonaFiltro={tipoPersonaFiltro}
-                          openDetalleCliente={openDetalleCliente}
-                          handleEdit={handleEdit}
-                          openModal={openModal}
-                          handleFetchInmuebles={handleFetchInmuebles}
-                        />
-                      ))}
+                      {filteredClientes.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="py-8 text-center text-gray-400">
+                            No hay clientes registrados.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredClientes.map((cliente) => (
+                          <ClienteRow
+                            key={cliente.id}
+                            cliente={cliente}
+                            tipoPersonaFiltro={tipoPersonaFiltro}
+                            openDetalleCliente={openDetalleCliente}
+                            handleEdit={handleEdit}
+                            openModal={openModal}
+                            handleFetchInmuebles={handleFetchInmuebles}
+                          />
+                        ))
+                      )}
                     </tbody>
                   </table>
                   {/* Tarjetas para móvil */}
-                  <div className="md:hidden flex flex-col gap-3 p-1">
+                  <div className="md:hidden flex flex-col gap-4 p-3">
                     {filteredClientes.length === 0 ? (
-                      <div className="text-center py-6 text-gray-400 bg-white rounded-lg">No hay clientes registrados.</div>
+                      <div className="text-center py-8 text-gray-400 bg-white rounded-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto mb-3 text-gray-300" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                        </svg>
+                        No hay clientes registrados.
+                      </div>
                     ) : (
                       filteredClientes.map(cliente => (
-                        <div key={cliente.id} className="bg-white rounded-lg shadow border p-3 flex flex-col gap-2">
+                        <div key={cliente.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 transition-shadow duration-200 hover:shadow-md">
                           {tipoPersonaFiltro === 'fisica' ? (
                             <>
-                              <div className="flex justify-between items-center">
-                                <span className="text-xs text-gray-500 font-semibold">Nombre</span>
-                                <span className="text-sm font-bold text-gray-700">{cliente.nombre}</span>
+                              <div className="flex items-center justify-between mb-4">
+                                <span className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                                  <FaUser className="text-red-500" />
+                                  {cliente.nombre} {cliente.apellidoPaterno} {cliente.apellidoMaterno}
+                                </span>
                               </div>
-                              <div className="flex justify-between items-center">
-                                <span className="text-xs text-gray-500 font-semibold">Apellidos</span>
-                                <span className="text-sm text-gray-700">{cliente.apellidoPaterno} {cliente.apellidoMaterno}</span>
-                              </div>
-                              <div className="flex justify-between items-center">
-                                <span className="text-xs text-gray-500 font-semibold">RFC</span>
-                                <span className="text-sm text-gray-700">{cliente.rfc}</span>
-                              </div>
-                              <div className="flex justify-between items-center">
-                                <span className="text-xs text-gray-500 font-semibold">Fecha Nac.</span>
-                                <span className="text-sm text-gray-700">{cliente.fechaNacimiento ? new Date(cliente.fechaNacimiento).toLocaleDateString() : 'N/A'}</span>
-                              </div>
-                              <div className="flex justify-between items-center">
-                                <span className="text-xs text-gray-500 font-semibold">Correo</span>
-                                <span className="text-sm text-gray-700">{cliente.correo}</span>
-                              </div>
-                              <div className="flex justify-between items-center">
-                                <span className="text-xs text-gray-500 font-semibold">Teléfono</span>
-                                <span className="text-sm text-gray-700">{cliente.telefono}</span>
+                              <div className="space-y-2 mb-4">
+                                <div className="flex justify-between items-center">
+                                  <span className="text-xs text-gray-500 font-medium">RFC</span>
+                                  <span className="text-sm font-semibold text-gray-700">{cliente.rfc}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                  <span className="text-xs text-gray-500 font-medium">Fecha Nac.</span>
+                                  <span className="text-sm text-gray-700">{formatearFecha(cliente.fechaNacimiento)}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                  <span className="text-xs text-gray-500 font-medium">Correo</span>
+                                  <span className="text-sm text-gray-700">{cliente.correo}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                  <span className="text-xs text-gray-500 font-medium">Teléfono</span>
+                                  <span className="text-sm text-gray-700">{cliente.telefono}</span>
+                                </div>
                               </div>
                             </>
                           ) : (
                             <>
-                              <div className="flex justify-between items-center">
-                                <span className="text-xs text-gray-500 font-semibold">Razón Social</span>
-                                <span className="text-sm font-bold text-gray-700">{cliente.razonSocial}</span>
+                              <div className="flex items-center justify-between mb-4">
+                                <span className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                                  <FaBuilding className="text-red-500" />
+                                  {cliente.razonSocial}
+                                </span>
                               </div>
-                              <div className="flex justify-between items-center">
-                                <span className="text-xs text-gray-500 font-semibold">Representante</span>
-                                <span className="text-sm text-gray-700">{cliente.representanteLegal}</span>
-                              </div>
-                              <div className="flex justify-between items-center">
-                                <span className="text-xs text-gray-500 font-semibold">RFC</span>
-                                <span className="text-sm text-gray-700">{cliente.rfc}</span>
-                              </div>
-                              <div className="flex justify-between items-center">
-                                <span className="text-xs text-gray-500 font-semibold">Fecha Const.</span>
-                                <span className="text-sm text-gray-700">{cliente.fechaConstitucion ? new Date(cliente.fechaConstitucion).toLocaleDateString() : 'N/A'}</span>
-                              </div>
-                              <div className="flex justify-between items-center">
-                                <span className="text-xs text-gray-500 font-semibold">Correo</span>
-                                <span className="text-sm text-gray-700">{cliente.correo}</span>
-                              </div>
-                              <div className="flex justify-between items-center">
-                                <span className="text-xs text-gray-500 font-semibold">Teléfono</span>
-                                <span className="text-sm text-gray-700">{cliente.telefono}</span>
+                              <div className="space-y-2 mb-4">
+                                <div className="flex justify-between items-center">
+                                  <span className="text-xs text-gray-500 font-medium">Representante</span>
+                                  <span className="text-sm font-semibold text-gray-700">{cliente.representanteLegal}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                  <span className="text-xs text-gray-500 font-medium">RFC</span>
+                                  <span className="text-sm text-gray-700">{cliente.rfc}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                  <span className="text-xs text-gray-500 font-medium">Fecha Const.</span>
+                                  <span className="text-sm text-gray-700">{formatearFecha(cliente.fechaConstitucion)}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                  <span className="text-xs text-gray-500 font-medium">Correo</span>
+                                  <span className="text-sm text-gray-700">{cliente.correo}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                  <span className="text-xs text-gray-500 font-medium">Teléfono</span>
+                                  <span className="text-sm text-gray-700">{cliente.telefono}</span>
+                                </div>
                               </div>
                             </>
                           )}
-                          <div className="flex justify-end gap-2 mt-2">
-                            <button className="p-1 hover:bg-gray-100 rounded-full" onClick={() => openDetalleCliente(cliente.rfc!)}>
-                              <FaEye className="w-5 h-5 text-gray-600" />
+                          <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
+                            <button className="p-2 hover:bg-slate-100 rounded-full transition-colors" onClick={() => openDetalleCliente(cliente.rfc!)}>
+                              <FaEye className="w-5 h-5 text-blue-600" />
                             </button>
                             {tipoUsuario === 'administrador' && (
                               <>
-                                <button className="p-1 hover:bg-gray-100 rounded-full" onClick={() => handleEdit(cliente)}>
-                                  <FaEdit className="w-5 h-5 text-yellow-500" />
+                                <button className="p-2 hover:bg-slate-100 rounded-full transition-colors" onClick={() => handleEdit(cliente)}>
+                                  <FaEdit className="w-5 h-5 text-amber-500" />
                                 </button>
-                                <button className="p-1 hover:bg-gray-100 rounded-full" onClick={() => openModal(cliente.id)}>
+                                <button className="p-2 hover:bg-slate-100 rounded-full transition-colors" onClick={() => openModal(cliente.id)}>
                                   <FaTrash className="w-5 h-5 text-red-500" />
                                 </button>
                               </>
                             )}
-                            <button className="p-1 hover:bg-gray-100 rounded-full" onClick={() => handleFetchInmuebles(cliente.id)}>
-                              <FaHome className="w-5 h-5 text-green-500" />
+                            <button className="p-2 hover:bg-slate-100 rounded-full transition-colors" onClick={() => handleFetchInmuebles(cliente.id)}>
+                              <FaHome className="w-5 h-5 text-green-600" />
                             </button>
                           </div>
                         </div>
@@ -507,20 +570,21 @@ const ClienteManager: React.FC = memo(() => {
             )}
 
             {modalIsOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-                        <h3 className="text-lg font-semibold">¿Estás seguro de eliminar este cliente?</h3>
-                        <div className="mt-4 flex justify-end space-x-2">
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 backdrop-blur-sm">
+                    <div className="bg-white p-6 rounded-xl shadow-xl w-full max-w-md transform transition-all animate-fadeIn">
+                        <h3 className="text-lg font-semibold text-gray-800 mb-4">¿Estás seguro de eliminar este cliente?</h3>
+                        <p className="text-gray-600 mb-6">Esta acción no se puede deshacer y se eliminarán todos los inmuebles y documentos asociados.</p>
+                        <div className="flex justify-end space-x-3">
                             <button
                                 type="button"
-                                className="btn-primary bg-red-500 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 transition duration-300 ease-in-out transform hover:scale-105"
+                                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50"
                                 onClick={closeModal}
                             >
                                 Cancelar
                             </button>
                             <button
                                 type="button"
-                                className="btn-primary bg-green-500 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition duration-300 ease-in-out transform hover:scale-105"
+                                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
                                 onClick={() => handleDelete(clienteToDelete!)}
                             >
                                 Eliminar
@@ -531,94 +595,167 @@ const ClienteManager: React.FC = memo(() => {
             )}
 
             {detalleClienteRFC && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white pt-10 pb-6 px-6 rounded-lg shadow-lg w-full max-w-md relative">
-                        <button
-                            type="button"
-                            className="absolute top-2 right-2 text-gray-700 hover:text-gray-900 text-2xl"
-                            onClick={closeDetalleCliente}
-                        >
-                            &times;
-                        </button>
-                        <DetalleCliente rfc={detalleClienteRFC} />
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 md:p-0 overflow-y-auto backdrop-blur-sm">
+                    <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl md:max-w-4xl lg:max-w-5xl my-6 mx-auto relative animate-scaleIn">
+                        <div className="flex items-center justify-between p-4 border-b rounded-t">
+                            <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+                                <span className="p-1.5 bg-gradient-to-r from-blue-500 to-blue-700 rounded-lg">
+                                    <FaEye className="w-4 h-4 text-white" />
+                                </span>
+                                Detalles del Cliente
+                            </h3>
+                            <button
+                                type="button"
+                                className="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg p-1.5 ml-auto inline-flex items-center justify-center"
+                                onClick={closeDetalleCliente}
+                            >
+                                <svg className="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                                    <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 1 12 12M13 1 1 13" />
+                                </svg>
+                                <span className="sr-only">Cerrar modal</span>
+                            </button>
+                        </div>
+                        <div className="p-4 md:p-6 overflow-y-auto max-h-[70vh]">
+                            <DetalleCliente rfc={detalleClienteRFC} />
+                        </div>
+                        <div className="flex items-center justify-end p-4 border-t border-gray-200 rounded-b">
+                            <button
+                                type="button"
+                                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+                                onClick={closeDetalleCliente}
+                            >
+                                Cerrar
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
 
             {inmuebles && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white pt-10 pb-6 px-6 rounded-lg shadow-lg w-full max-w-md relative">
-                        <button
-                            type="button"
-                            className="absolute top-2 right-2 text-gray-700 hover:text-gray-900 text-2xl"
-                            onClick={closehandleFetchInmuebles}
-                        >
-                            &times;
-                        </button>
-                        <InmuebleByCliente clienteId={inmuebles} />
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 md:p-0 overflow-y-auto backdrop-blur-sm">
+                    <div className="bg-white rounded-xl shadow-xl w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-2xl my-6 mx-auto relative animate-scaleIn">
+                        <div className="flex items-center justify-between p-4 border-b rounded-t">
+                            <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+                                <span className="p-1.5 bg-gradient-to-r from-green-500 to-green-700 rounded-lg">
+                                    <FaHome className="w-4 h-4 text-white" />
+                                </span>
+                                Inmuebles del Cliente
+                            </h3>
+                            <button
+                                type="button"
+                                className="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg p-1.5 ml-auto inline-flex items-center justify-center"
+                                onClick={closehandleFetchInmuebles}
+                                aria-label="Cerrar"
+                            >
+                                <svg className="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                                    <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 1 12 12M13 1 1 13" />
+                                </svg>
+                                <span className="sr-only">Cerrar modal</span>
+                            </button>
+                        </div>
+                        <div className="overflow-y-auto max-h-[70vh]">
+                            <InmuebleByCliente clienteId={inmuebles} />
+                        </div>
+                        <div className="flex items-center justify-end p-4 border-t border-gray-200 rounded-b">
+                            <button
+                                type="button"
+                                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+                                onClick={closehandleFetchInmuebles}
+                            >
+                                Cerrar
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
 
             {selectedCliente && (
-                <div className="mt-6">
-                    <h3 className="text-lg font-semibold">{isEditing ? 'Editar Cliente' : 'Agregar Cliente'}</h3>
+                <div className="bg-white rounded-xl shadow-md mt-6 p-6 border border-gray-100">
+                    <h3 className="text-lg font-semibold flex items-center gap-2 mb-4">
+                        <span className="p-1.5 bg-gradient-to-r from-amber-500 to-amber-700 rounded-lg">
+                            {isEditing ? 
+                                <FaEdit className="w-4 h-4 text-white" /> : 
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                                </svg>
+                            }
+                        </span>
+                        {isEditing ? 'Editar Cliente' : 'Agregar Cliente'}
+                    </h3>
                     <form className="mt-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <input
-                                type="text"
-                                placeholder="Nombre"
-                                value={selectedCliente.nombre || ''}
-                                onChange={(e) => handleChangeSelectedCliente('nombre', e.target.value)}
-                                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                            />
-                            <input
-                                type="text"
-                                placeholder="Apellido Paterno"
-                                value={selectedCliente.apellidoPaterno || ''}
-                                onChange={(e) => handleChangeSelectedCliente('apellidoPaterno', e.target.value)}
-                                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                            />
-                            <input
-                                type="text"
-                                placeholder="Apellido Materno"
-                                value={selectedCliente.apellidoMaterno || ''}
-                                onChange={(e) => handleChangeSelectedCliente('apellidoMaterno', e.target.value)}
-                                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                            />
-                            <input
-                                type="text"
-                                placeholder="RFC"
-                                value={selectedCliente.rfc || ''}
-                                onChange={(e) => handleChangeSelectedCliente('rfc', e.target.value)}
-                                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                            />
-                            <input
-                                type="text"
-                                placeholder="Correo"
-                                value={selectedCliente.correo || ''}
-                                onChange={(e) => handleChangeSelectedCliente('correo', e.target.value)}
-                                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                            />
-                            <input
-                                type="text"
-                                placeholder="Teléfono"
-                                value={selectedCliente.telefono || ''}
-                                onChange={(e) => handleChangeSelectedCliente('telefono', e.target.value)}
-                                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                            />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div className="form-group">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+                                <input
+                                    type="text"
+                                    placeholder="Nombre"
+                                    value={selectedCliente.nombre || ''}
+                                    onChange={(e) => handleChangeSelectedCliente('nombre', e.target.value)}
+                                    className="px-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent shadow-sm"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Apellido Paterno</label>
+                                <input
+                                    type="text"
+                                    placeholder="Apellido Paterno"
+                                    value={selectedCliente.apellidoPaterno || ''}
+                                    onChange={(e) => handleChangeSelectedCliente('apellidoPaterno', e.target.value)}
+                                    className="px-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent shadow-sm"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Apellido Materno</label>
+                                <input
+                                    type="text"
+                                    placeholder="Apellido Materno"
+                                    value={selectedCliente.apellidoMaterno || ''}
+                                    onChange={(e) => handleChangeSelectedCliente('apellidoMaterno', e.target.value)}
+                                    className="px-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent shadow-sm"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">RFC</label>
+                                <input
+                                    type="text"
+                                    placeholder="RFC"
+                                    value={selectedCliente.rfc || ''}
+                                    onChange={(e) => handleChangeSelectedCliente('rfc', e.target.value)}
+                                    className="px-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent shadow-sm"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Correo</label>
+                                <input
+                                    type="email"
+                                    placeholder="Correo"
+                                    value={selectedCliente.correo || ''}
+                                    onChange={(e) => handleChangeSelectedCliente('correo', e.target.value)}
+                                    className="px-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent shadow-sm"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                                <input
+                                    type="text"
+                                    placeholder="Teléfono"
+                                    value={selectedCliente.telefono || ''}
+                                    onChange={(e) => handleChangeSelectedCliente('telefono', e.target.value)}
+                                    className="px-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent shadow-sm"
+                                />
+                            </div>
                         </div>
-                        <div className="mt-4 flex justify-end space-x-2">
+                        <div className="mt-6 flex justify-end space-x-3">
                             <button
                                 type="button"
-                                className="btn-primary bg-red-500 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 transition duration-300 ease-in-out transform hover:scale-105"
+                                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50"
                                 onClick={handleCancelEdit}
                             >
                                 Cancelar
                             </button>
                             <button
                                 type="button"
-                                className="btn-primary bg-green-500 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition duration-300 ease-in-out transform hover:scale-105"
+                                className="px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
                                 onClick={handleSave}
                             >
                                 Guardar

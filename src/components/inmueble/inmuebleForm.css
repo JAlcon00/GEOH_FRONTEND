@@ -1,0 +1,91 @@
+/* Estilos para el formulario de edición de inmuebles */
+.inmueble-form {
+    max-width: 100%;
+    padding: 1.5rem;
+    background-color: #fff;
+    border-radius: 0.5rem;
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fadeIn {
+    animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* Autocomplete dropdown */
+.autocomplete-root {
+    position: relative;
+    width: 100%;
+}
+
+.autocomplete-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.375rem;
+    margin-top: 0.25rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    z-index: 10;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+/* Form group styles */
+.form-group {
+    margin-bottom: 1rem;
+}
+
+/* Estilos responsivos */
+@media (max-width: 640px) {
+    .inmueble-form {
+        padding: 1rem;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .form-actions button {
+        width: 100%;
+    }
+}
+
+/* Estilo para los dropzones */
+.dropzone {
+    transition: all 0.2s ease-in-out;
+}
+
+.dropzone:hover {
+    border-color: #dc2626;
+    background-color: #fef2f2;
+}
+
+/* Animación para notificaciones */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.notification {
+    animation: slideIn 0.3s ease-out forwards;
+}

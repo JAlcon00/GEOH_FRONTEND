@@ -1,0 +1,71 @@
+/* Animaciones para el componente InmuebleByCliente */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+    animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* Animación para el panel expandible */
+.animate-expand {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+}
+
+.animate-expand.expanded {
+    max-height: 1000px; /* Un valor lo suficientemente grande para contener el contenido */
+}
+
+/* Efectos hover y transiciones */
+.card-hover {
+    transition: all 0.2s ease;
+}
+
+.card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Estilo para tarjetas activas */
+.card-active {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.5);
+}
+
+/* Estilos responsivos para los botones en móvil */
+@media (max-width: 640px) {
+    .action-buttons-container {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .action-button {
+        margin-bottom: 0.5rem;
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* Animación de carga */
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+/* Animación para mensajes de error */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+    20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+.error-shake {
+    animation: shake 0.6s ease-in-out;
+}
