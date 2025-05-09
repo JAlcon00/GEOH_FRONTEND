@@ -3,6 +3,7 @@ import { getInmueblesByCliente, deleteInmueble } from '../../services/inmueble.s
 import { FaBuilding, FaMapMarkerAlt, FaMoneyBillWave, FaFileAlt, FaCamera, FaCalendarAlt, FaEdit, FaTrash, FaFolderOpen } from 'react-icons/fa';
 import DocumentoService from '../../services/documento.service';
 import DocumentoManager from '../documento/documentoManager';
+import EditarInmueble from './editarInmueble';
 import './inmuebleByCliente.css';
 
 interface Inmueble {
@@ -41,6 +42,8 @@ const InmuebleByCliente: React.FC<InmuebleByClienteProps> = memo(({ clienteId })
   const [selectedInmueble, setSelectedInmueble] = useState<number | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [inmuebleToDelete, setInmuebleToDelete] = useState<number | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [inmuebleToEdit, setInmuebleToEdit] = useState<number | null>(null);
 
   const fetchInmuebles = useCallback(async () => {
     if (!clienteId) return;
@@ -172,7 +175,17 @@ const InmuebleByCliente: React.FC<InmuebleByClienteProps> = memo(({ clienteId })
 
   const handleEditInmueble = (e: React.MouseEvent, inmuebleId: number) => {
     e.stopPropagation();
-    alert(`Función para editar inmueble ID: ${inmuebleId} (implementar según flujo)`);
+    setInmuebleToEdit(inmuebleId);
+    setShowEditModal(true);
+  };
+
+  const handleCloseEditModal = () => {
+    setShowEditModal(false);
+    setInmuebleToEdit(null);
+  };
+
+  const handleEditSuccess = () => {
+    fetchInmuebles();
   };
 
   if (!loading && !error && inmuebles.length === 0) {
@@ -374,6 +387,14 @@ const InmuebleByCliente: React.FC<InmuebleByClienteProps> = memo(({ clienteId })
           inmuebleId={selectedInmueble} 
           onClose={handleCloseExpediente}
           onStatusUpdate={fetchInmuebles} 
+        />
+      )}
+
+      {showEditModal && inmuebleToEdit && (
+        <EditarInmueble
+          inmuebleId={inmuebleToEdit}
+          onClose={handleCloseEditModal}
+          onSuccess={handleEditSuccess}
         />
       )}
     </div>

@@ -8,8 +8,11 @@ import { getClienteByRFC, getClienteById } from '../services/cliente.service';
 import { geocodeAddress } from '../services/geocode.service';
 import DocumentoManager from '../components/documento/documentoManager';
 import Loader from '../components/Layout/Loader';
+import api from '../services/api';
 import './Home.css';
 import { IInmueble } from '../types/inmueble.types';
+// Importamos las utilidades de búsqueda incluyendo formatMarkerLabel
+import { getSuggestionDisplayText, getSuggestionSecondaryInfo, formatMarkerLabel} from '../utils/search/suggestionUtils';
 
 interface InmuebleMap extends IInmueble {
   // Permitir acceso a ubicacionGeografica sin errores de tipo
@@ -207,144 +210,6 @@ const Home: React.FC = () => {
     }
   };
 
-  // Función mejorada para obtener el texto de visualización específico por tipo de búsqueda
-  const getSuggestionDisplayText = (suggestion: any): string => {
-    switch (searchType) {
-      case 'nombre':
-        // Mejorada búsqueda por nombre con prioridades y formato más completo
-        // Usar el nombreCliente si está disponible directamente
-        if (suggestion.nombreCliente) return suggestion.nombreCliente;
-
-        // Construir nombre completo con componentes individuales si están disponibles
-        if (suggestion.nombre) {
-          // Construir nombre completo con todos los componentes disponibles
-          let nombreCompleto = suggestion.nombre;
-          if (suggestion.apellidoPaterno) nombreCompleto += ` ${suggestion.apellidoPaterno}`;
-          if (suggestion.apellidoMaterno) nombreCompleto += ` ${suggestion.apellidoMaterno}`;
-          return nombreCompleto;
-        }
-
-        // Caso para empresas o personas morales
-        if (suggestion.razonSocial) return `${suggestion.razonSocial} (Empresa)`;
-
-        // Si tenemos un campo nombreDisplay (que puede haber sido creado en handleInputChange)
-        if (suggestion.nombreDisplay) return suggestion.nombreDisplay;
-
-        // Si tiene clienteId pero no nombre, mostrar placeholder informativo
-        if (suggestion.clienteId) return `Cliente #${suggestion.clienteId}`;
-
-        // Último caso de respaldo, usar cualquier campo que pueda indicar un nombre
-        return suggestion.name || suggestion.cliente || suggestion.title ||
-          `Sugerencia #${suggestion.nombreCliente || ''}`;
-        break;
-      case 'rfc':
-        // Mejorada búsqueda por RFC con mejor formato y alternativas
-        if (suggestion.rfc) {
-          const rfc = suggestion.rfc.toUpperCase();
-          // Determinar si es persona física (13 caracteres) o moral (12 caracteres)
-          const tipoRfc = rfc.length === 13 ? "Persona Física" :
-            rfc.length === 12 ? "Persona Moral" : "";
-          return tipoRfc ? `${rfc} (${tipoRfc})` : rfc;
-        }
-        if (suggestion.clienteId) return `Cliente ID: ${suggestion.clienteId}`;
-        break;
-
-      case 'direccion':
-        // Para búsqueda por dirección, mostrar solo la dirección
-        if (suggestion.direccion) return suggestion.direccion;
-        if (suggestion.domicilio) return suggestion.domicilio;
-        // Construir dirección desde componentes si están disponibles
-        if (suggestion.calle) {
-          let direccionCompleta = suggestion.calle;
-          if (suggestion.numeroExterior) direccionCompleta += ` #${suggestion.numeroExterior}`;
-          if (suggestion.colonia) direccionCompleta += `, ${suggestion.colonia}`;
-          return direccionCompleta;
-        }
-        break;
-    }
-
-    // Si no hay un valor específico para el tipo, usar un valor de respaldo inteligente
-    return suggestion[searchType] || suggestion.id ? `ID #${suggestion.id}` : 'Sugerencia';
-  };
-
-  // Función para obtener información adicional para la sugerencia
-  const getSuggestionSecondaryInfo = (suggestion: any): string => {
-    switch (searchType) {
-      case 'nombre':
-        // Información secundaria más completa para nombres
-        const infoItems = [];
-
-        // Agregar RFC si existe
-        if (suggestion.rfc) infoItems.push(`RFC: ${suggestion.rfc.toUpperCase()}`);
-
-        // Agregar ID del cliente
-        if (suggestion.clienteId) infoItems.push(`ID: ${suggestion.clienteId}`);
-
-        // Agregar estatus si existe
-        if (suggestion.estatus) infoItems.push(`Estatus: ${suggestion.estatus}`);
-
-        // Agregar dirección abreviada
-        if (suggestion.direccion) {
-          // Limitar dirección a 40 caracteres para mantenerlo compacto
-          const direccionCorta = suggestion.direccion.length > 40
-            ? suggestion.direccion.substring(0, 40) + '...'
-            : suggestion.direccion;
-          infoItems.push(direccionCorta);
-        }
-
-        return infoItems.join(' | ');
-
-      case 'rfc':
-        // Información secundaria más detallada para RFC
-        const rfcInfoItems = [];
-
-        // Mostrar nombre completo o razón social
-        if (suggestion.nombreCliente) rfcInfoItems.push(suggestion.nombreCliente);
-        else if (suggestion.nombre) {
-          let nombreCompleto = suggestion.nombre;
-          if (suggestion.apellidoPaterno) nombreCompleto += ` ${suggestion.apellidoPaterno}`;
-          if (suggestion.apellidoMaterno) nombreCompleto += ` ${suggestion.apellidoMaterno}`;
-          rfcInfoItems.push(nombreCompleto);
-        }
-        else if (suggestion.razonSocial) rfcInfoItems.push(suggestion.razonSocial);
-
-        // Agregar tipo de persona si es conocido
-        if (suggestion.tipoPersona) {
-          rfcInfoItems.push(suggestion.tipoPersona === 'fisica' ? 'Persona Física' : 'Persona Moral');
-        }
-
-        // Agregar número de inmuebles si está disponible
-        if (suggestion.cantidadInmuebles) {
-          rfcInfoItems.push(`${suggestion.cantidadInmuebles} inmuebles`);
-        }
-
-        return rfcInfoItems.join(' | ');
-
-      case 'direccion':
-        // Información secundaria mejorada para direcciones
-        const direccionInfo = [];
-
-        // Mostrar cliente asociado
-        if (suggestion.nombreCliente) direccionInfo.push(suggestion.nombreCliente);
-        else if (suggestion.clienteId) direccionInfo.push(`Cliente ID: ${suggestion.clienteId}`);
-
-        // Mostrar valor de mercado si está disponible
-        if (suggestion.valorMercado) {
-          const valor = Number(suggestion.valorMercado);
-          if (!isNaN(valor)) {
-            direccionInfo.push(`$${valor.toLocaleString()}`);
-          }
-        }
-
-        // Mostrar estatus si existe
-        if (suggestion.estatus) direccionInfo.push(`Estatus: ${suggestion.estatus}`);
-
-        return direccionInfo.join(' | ');
-    }
-
-    return '';
-  };
-
   const obtenerSugerenciasEspecificas = async (
     tipo: 'nombre' | 'direccion' | 'rfc',
     valor: string
@@ -356,20 +221,94 @@ const Home: React.FC = () => {
       switch (tipo) {
         case 'nombre':
           resultados = await buscarInmuebles({ nombre: valor });
-          // ...extra logic to refine by nombre...
+          
+          // Proceso para enriquecer los resultados con información completa del cliente
+          resultados = await Promise.all(resultados.map(async (item) => {
+            // Si tiene clienteId pero no tiene información completa del cliente
+            if (item.clienteId && !item.nombreCliente && !item.nombre && !item.razonSocial) {
+              try {
+                // Obtener datos completos del cliente
+                const clienteCompleto = await getClienteById(item.clienteId);
+                if (clienteCompleto) {
+                  // Combinar los datos
+                  return {
+                    ...item,
+                    // Añadir información del cliente según el tipo de persona
+                    tipoPersona: clienteCompleto.tipoPersona,
+                    nombre: clienteCompleto.nombre,
+                    apellidoPaterno: clienteCompleto.apellidoPaterno,
+                    apellidoMaterno: clienteCompleto.apellidoMaterno,
+                    razonSocial: clienteCompleto.razonSocial,
+                    representanteLegal: clienteCompleto.representanteLegal,
+                    // Construir un nombre para mostrar
+                    nombreCliente: clienteCompleto.tipoPersona === 'fisica'
+                      ? `${clienteCompleto.nombre || ''} ${clienteCompleto.apellidoPaterno || ''} ${clienteCompleto.apellidoMaterno || ''}`.trim()
+                      : clienteCompleto.razonSocial
+                  };
+                }
+              } catch (error) {
+                console.error(`Error al obtener datos completos del cliente ID ${item.clienteId}:`, error);
+              }
+            }
+            return item;
+          }));
           break;
         case 'rfc':
-          resultados = await buscarInmuebles({ rfc: valor.trim() });
-          // ...extra logic to refine by rfc...
+          // Para RFC, intentamos hacer dos tipos de búsquedas
+          // 1. Buscar directamente inmuebles asociados a clientes con el RFC parcial
+          const inmueblesFromRFC = await buscarInmuebles({ rfc: valor.trim() });
+          
+          // 2. Si no hay resultados o son pocos, intentar encontrar clientes por RFC
+          if (inmueblesFromRFC.length < 5) {
+            try {
+              // Llamar al API para obtener clientes por RFC parcial (si existe tal endpoint)
+              // Esto es una simulación - tu implementación puede variar según tu API
+              const response = await api.get('/clientes', { 
+                params: { rfc: valor.trim() }
+              });
+              
+              if (response.data && Array.isArray(response.data)) {
+                // Convertir resultados de clientes al formato esperado para sugerencias
+                const clientesSuggestions = response.data.map(cliente => ({
+                  ...cliente,
+                  // Marcamos como cliente para diferenciar en la interfaz
+                  isCliente: true,
+                  // Aseguramos que la sugerencia aparezca bien formateada
+                  displayText: `${cliente.rfc} - ${cliente.nombre || cliente.razonSocial || 'Cliente'}`
+                }));
+                
+                // Combinar con los inmuebles encontrados
+                resultados = [...inmueblesFromRFC, ...clientesSuggestions];
+              } else {
+                resultados = inmueblesFromRFC;
+              }
+            } catch (e) {
+              console.warn('No se pudo obtener sugerencias de clientes por RFC:', e);
+              resultados = inmueblesFromRFC;
+            }
+          } else {
+            resultados = inmueblesFromRFC;
+          }
           break;
         case 'direccion':
           resultados = await buscarInmuebles({ direccion: valor });
-          // ...extra logic to refine by dirección...
           break;
       }
-      // ...sorting and duplicates removal...
-      console.log('Sugerencias obtenidas:', resultados);
-      return resultados;
+      
+      // Eliminar duplicados basado en ID
+      const uniqueResultsMap = new Map();
+      resultados.forEach(item => {
+        // Si es un inmueble, usar su ID, si es cliente usar clienteId
+        const id = item.id || item.clienteId;
+        if (id && !uniqueResultsMap.has(id)) {
+          uniqueResultsMap.set(id, item);
+        }
+      });
+      
+      const uniqueResults = Array.from(uniqueResultsMap.values());
+      
+      console.log('Sugerencias obtenidas:', uniqueResults);
+      return uniqueResults;
     } catch (err) {
       console.error('Error:', err);
       return [];
@@ -405,11 +344,63 @@ const Home: React.FC = () => {
   };
 
   const handleSuggestionSelect = (item: any) => {
-    // ...use specialized display logic...
-    const termino = getSuggestionDisplayText(item);
+    console.log('Cliente seleccionado:', item); // Para depuración
+    
+    // Obtener el texto para mostrar en el input de búsqueda
+    const termino = getSuggestionDisplayText(item, searchType);
     setSearchTerm(termino);
     setSuggestions([]);
-    handleSearch(termino);
+    
+    // Si estamos buscando por nombre, y el item tiene clienteId, lo usamos directamente
+    if (searchType === 'nombre' && item.clienteId) {
+      console.log('Buscando inmuebles directamente para el cliente ID:', item.clienteId);
+      // Buscar inmuebles directamente para este cliente específico
+      setLoading(true);
+      getInmueblesByCliente(item.clienteId)
+        .then(inmuebles => {
+          if (inmuebles.length === 0) {
+            alert(`El cliente "${termino}" no tiene inmuebles registrados.`);
+            setLoading(false);
+            return;
+          }
+          
+          // Procesa los inmuebles obtenidos
+          return Promise.all(inmuebles.map(async inmueble => {
+            return await loadPropertyWithClientInfo(inmueble);
+          }));
+        })
+        .then(inmueblesConCliente => {
+          if (!inmueblesConCliente) return; // Si no hay inmuebles, salimos
+          
+          setResultProperties(inmueblesConCliente);
+          
+          // Si hay inmuebles, centramos el mapa en el primero
+          const primerInmueble = inmueblesConCliente[0];
+          if (isValidCoordinate(primerInmueble)) {
+            setMapCenter(getSafeCoordinates(primerInmueble));
+            
+            // Actualizar marcadores
+            setMarkers(inmueblesConCliente.filter(isValidCoordinate));
+          }
+          
+          setLoading(false);
+        })
+        .catch(error => {
+          console.error('Error al cargar inmuebles del cliente:', error);
+          alert('Ocurrió un error al buscar los inmuebles del cliente.');
+          setLoading(false);
+        });
+    } else if (searchType === 'rfc' && item.rfc) {
+      // Para búsqueda por RFC, usamos el RFC puro sin formateo
+      const rfcPuro = item.rfc.trim();
+      console.log('Buscando por RFC puro:', rfcPuro);
+      
+      // Iniciar búsqueda con el RFC puro
+      handleSearch(rfcPuro);
+    } else {
+      // Para otros tipos de búsqueda, usamos el flujo normal
+      handleSearch(termino);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -522,7 +513,31 @@ const Home: React.FC = () => {
         if (inmuebles.length > 1) {
           inmuebles = [inmuebles[0]];
         }
-      } else if (searchType === 'nombre' || searchType === 'rfc') {
+      } else if (searchType === 'nombre') {
+        // Para búsquedas por nombre, primero identificamos el cliente
+        const clientesEncontrados = await buscarInmuebles({ nombre: term });
+        
+        // Si encontramos resultados del cliente
+        if (clientesEncontrados.length > 0) {
+          const primerCliente = clientesEncontrados[0];
+          
+          // Si el cliente tiene un ID, buscamos todos sus inmuebles
+          if (primerCliente.clienteId) {
+            console.log('Buscando inmuebles para el cliente ID:', primerCliente.clienteId);
+            inmuebles = await getInmueblesByCliente(primerCliente.clienteId);
+            
+            // Si no se encontraron inmuebles para el cliente, mostramos un mensaje
+            if (inmuebles.length === 0) {
+              alert(`El cliente "${term}" no tiene inmuebles registrados.`);
+            }
+          } else {
+            // Si no hay clienteId, usamos la búsqueda estándar
+            inmuebles = clientesEncontrados;
+          }
+        } else {
+          alert(`No se encontró ningún cliente con el nombre "${term}".`);
+        }
+      } else if (searchType === 'rfc') {
         const params = { [searchType]: term };
         inmuebles = await buscarInmuebles(params);
         if (inmuebles.length === 0 && searchType === 'rfc') {
@@ -765,43 +780,6 @@ const Home: React.FC = () => {
     return svgMarker;
   };
 
-  // Función para formatear el texto del marcador de forma personalizada
-  const formatMarkerLabel = (marker: InmuebleMap): string => {
-    let label = '';
-
-    // Agregar ID del inmueble si está disponible
-    if (marker.id) {
-      label += `#${marker.id}: `;
-    }
-
-    // Agregar valor de mercado con formato de moneda
-    if (marker.valorMercado) {
-      const valor = Number(marker.valorMercado);
-
-      // Si el valor es mayor a un millón, mostrar en millones
-      if (valor >= 1000000) {
-        label += `$${(valor / 1000000).toFixed(1)}M`;
-      } else if (valor >= 1000) {
-        // Si es mayor a mil, mostrar en miles
-        label += `$${(valor / 1000).toFixed(0)}K`;
-      } else {
-        label += `$${valor.toLocaleString()}`;
-      }
-    }
-
-    // Si hay información del cliente, agregarla como segunda línea
-    if (marker.nombreCliente) {
-      // Acortar el nombre si es muy largo
-      const nombreCorto = marker.nombreCliente.length > 20
-        ? marker.nombreCliente.substring(0, 18) + '...'
-        : marker.nombreCliente;
-
-      label = label ? `${label}\n${nombreCorto}` : nombreCorto;
-    }
-
-    return label || 'Inmueble';
-  };
-
   // Función para generar un fallback de imagen si la original no carga
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
     e.currentTarget.src = 'https://via.placeholder.com/400x300?text=Sin+Imagen';
@@ -846,8 +824,8 @@ const Home: React.FC = () => {
           {suggestions.length > 0 && (
             <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 shadow-lg rounded w-full z-50 max-h-60 overflow-y-auto">
               {suggestions.map((sug, index) => {
-                const mainText = getSuggestionDisplayText(sug);
-                const secondaryText = getSuggestionSecondaryInfo(sug);
+                const mainText = getSuggestionDisplayText(sug, searchType);
+                const secondaryText = getSuggestionSecondaryInfo(sug, searchType);
 
                 return (
                   <div
