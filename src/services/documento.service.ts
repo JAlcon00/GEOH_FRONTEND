@@ -62,27 +62,58 @@ class DocumentoService {
     // Método para actualizar un documento por su ID
     async actualizarDocumento(
         id: number,
-        file: File,
+        file?: File | null,
         tipoDocumento?: string,
         estatus?: string
     ): Promise<any> {
-        const formData = new FormData();
-        formData.append('file', file);
-        if (tipoDocumento) {
-            formData.append('tipoDocumento', tipoDocumento);
-        }
-        // Agregar el estatus en caso de que se envíe
-        if (estatus) {
-            formData.append('estatus', estatus);
-        }
-    
-        const response = await api.put(`/documentos/${id}`, formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data'
+        try {
+            const formData = new FormData();
+            
+            // Solo agregar el archivo si se proporciona uno
+            if (file) {
+                formData.append('file', file);
             }
-        });
-    
-        return response.data;
+            
+            if (tipoDocumento) {
+                formData.append('tipoDocumento', tipoDocumento);
+            }
+            
+            if (estatus) {
+                formData.append('estatus', estatus);
+            }
+            
+            // Si no hay archivo pero hay otros cambios, usar un enfoque diferente
+            if (!file && (tipoDocumento || estatus)) {
+                // Usar JSON para actualizar solo los metadatos
+                const data: any = {};
+                if (tipoDocumento) data.tipoDocumento = tipoDocumento;
+                if (estatus) data.estatus = estatus;
+                
+                const response = await api.put(`/documentos/${id}/metadata`, data);
+                return response.data;
+            }
+        
+            // Si hay archivo, hacer la solicitud multipart/form-data
+            const response = await api.put(`/documentos/${id}`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+        
+            return response.data;
+        } catch (error: any) {
+            console.error('Error en actualizarDocumento:', error);
+            
+            // Capturar mensaje específico del servidor si está disponible
+            const errorMessage = error.response?.data?.message || 
+                                'Error al actualizar el documento';
+            
+            throw {
+                message: errorMessage,
+                originalError: error,
+                status: error.response?.status
+            };
+        }
     }
 
     async actualizarEstatusDocumento(id: number, estatus: string): Promise<any> {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, ChangeEvent, useCallback, memo } from 'react';
 import DocumentoService from '../../services/documento.service';
-import { FaEye, FaEdit, FaTrash, FaSave, FaUpload, FaFileAlt, FaFilePdf, FaFileImage, FaExclamationTriangle } from 'react-icons/fa';
+import { FaEye, FaTrash, FaSave, FaUpload, FaFileAlt, FaFilePdf, FaFileImage, FaExclamationTriangle } from 'react-icons/fa';
 import Dropzone from 'react-dropzone';
 
 interface Documento {
@@ -31,7 +31,6 @@ const DocumentoCard = memo(({
     documento,
     isDeleted,
     onView,
-    onEdit,
     onDelete,
     onStatusChange,
     onSaveStatus,
@@ -196,12 +195,7 @@ const DocumentoCard = memo(({
 
                             {/* Acciones para el documento */}
                             <div className="flex justify-between gap-2">
-                                <button
-                                    onClick={onEdit}
-                                    className="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-2 px-3 rounded-lg transition-colors flex items-center justify-center gap-2"
-                                >
-                                    <FaEdit /> Editar
-                                </button>
+                                
                                 <button
                                     onClick={() => onView && onView(documento.archivoUrl)}
                                     className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded-lg transition-colors flex items-center justify-center gap-2"
