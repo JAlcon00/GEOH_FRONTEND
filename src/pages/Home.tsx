@@ -65,6 +65,20 @@ const Home: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
 
+  // Reemplazar las URLs de via.placeholder.com con la imagen local
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    e.currentTarget.src = '/placeholder-image.png';
+  };
+
+  // Actualizar las referencias a las imágenes de placeholder
+  const updatedImageSrc = (image: any, foto: any) => {
+    if (typeof image === 'string') return image;
+    if (image instanceof File) return URL.createObjectURL(image);
+    if (typeof foto === 'string') return foto;
+    if (foto instanceof File) return URL.createObjectURL(foto);
+    return '/placeholder-image.png';
+  };
+
   // Cargar todos los inmuebles al montar la página (estilo Airbnb)
   useEffect(() => {
     const cargarTodosLosInmuebles = async () => {
@@ -781,11 +795,6 @@ const Home: React.FC = () => {
   };
 
   // Función para generar un fallback de imagen si la original no carga
-  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-    e.currentTarget.src = 'https://via.placeholder.com/400x300?text=Sin+Imagen';
-  };
-
-  // Función para determinar el color del estatus basado en su valor
   const getStatusColor = (status: string | undefined): string => {
     if (!status) return 'text-gray-500'; // Por defecto si no hay estatus
 
@@ -939,17 +948,7 @@ const Home: React.FC = () => {
               {/* Cabecera con imagen */}
               <div className="relative">
                 <img
-                  src={
-                    typeof resultProperties[0].image === 'string'
-                      ? resultProperties[0].image
-                      : resultProperties[0].image instanceof File
-                        ? URL.createObjectURL(resultProperties[0].image)
-                        : typeof resultProperties[0].foto === 'string'
-                          ? resultProperties[0].foto
-                          : resultProperties[0].foto instanceof File
-                            ? URL.createObjectURL(resultProperties[0].foto)
-                            : "https://via.placeholder.com/800x400?text=Sin+Imagen"
-                  }
+                  src={updatedImageSrc(resultProperties[0].image, resultProperties[0].foto)}
                   alt={`Inmueble en ${resultProperties[0].direccion}`}
                   className="w-full h-48 object-cover object-center"
                   onError={handleImageError}
@@ -1092,17 +1091,7 @@ const Home: React.FC = () => {
                       {/* Imagen del inmueble */}
                       <div className="relative h-40">
                         <img
-                          src={
-                            typeof inmueble.image === "string"
-                              ? inmueble.image
-                              : inmueble.image instanceof File
-                                ? URL.createObjectURL(inmueble.image)
-                                : typeof inmueble.foto === "string"
-                                  ? inmueble.foto
-                                  : inmueble.foto instanceof File
-                                    ? URL.createObjectURL(inmueble.foto)
-                                    : "https://via.placeholder.com/400x200?text=Sin+Imagen"
-                          }
+                          src={updatedImageSrc(inmueble.image, inmueble.foto)}
                           alt={`Inmueble en ${inmueble.direccion}`}
                           className="w-full h-full object-cover"
                           onError={handleImageError}

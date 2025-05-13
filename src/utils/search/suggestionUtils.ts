@@ -1,5 +1,3 @@
-import { IInmueble } from '../../types/inmueble.types';
-
 export type SearchType = 'nombre' | 'direccion' | 'rfc';
 
 // Interfaz para representar una sugerencia de búsqueda

@@ -251,7 +251,11 @@ const InmuebleByCliente: React.FC<InmuebleByClienteProps> = memo(({ clienteId })
                     />
                   ) : (
                     <div className="w-full h-40 bg-gray-200 flex items-center justify-center rounded-md">
-                      <FaBuilding className="text-gray-400 text-4xl" />
+                      <img 
+                        src="/placeholder-image.png" 
+                        alt="Sin imagen disponible" 
+                        className="w-20 h-20 object-contain"
+                      />
                     </div>
                   )}
                 </div>
